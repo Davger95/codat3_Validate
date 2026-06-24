@@ -9,19 +9,34 @@ from pathlib import Path
 def discover_workbook(workspace: Path) -> Path:
     candidates = []
     preferred_patterns = [
+        'templates/*_test.xlsx',
+        'templates/*authoring-guidance*.xlsx',
         'HE_SEM_shemaforge/*_test.xlsx',
         'HE_SEM_shemaforge/*authoring-guidance*.xlsx',
         'HE_SEM_shemaforge/Strukturvorlage*.xlsx',
         'HE_SEM_shemaforge/*.xlsx',
+        'templates/*.xlsx',
+        '*.xlsx',
     ]
+    seen = set()
     for pattern in preferred_patterns:
+        matches = []
         for p in workspace.glob(pattern):
-            if p.is_file() and 'archive/' not in str(p).replace('\\', '/'):
-                candidates.append(p)
-        if candidates:
+            normalized = str(p).replace('\\', '/')
+            if not p.is_file():
+                continue
+            if '/archive/' in f'/{normalized}' or normalized.startswith('archive/'):
+                continue
+            if normalized in seen:
+                continue
+            seen.add(normalized)
+            matches.append(p)
+        if matches:
+            candidates = matches
             break
     if not candidates:
-        raise FileNotFoundError('No workbook candidate found for validation.')
+        searched = ', '.join(preferred_patterns)
+        raise FileNotFoundError(f'No workbook candidate found for validation. Searched patterns: {searched}')
     candidates = sorted(candidates, key=lambda p: p.stat().st_mtime, reverse=True)
     return candidates[0]
 
