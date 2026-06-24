@@ -213,7 +213,7 @@ class Validator:
         rows = self._dict_rows()
         required = [
             'OrganizationCode', 'DictionaryCode', 'DictionaryName (DE)', 'DictionaryName (FR)',
-            'DictionaryVersion', 'DictionaryUri', 'LifecycleStatus', 'Owner / Publisher'
+            'DictionaryVersion', 'DictionaryUri'
         ]
         for key in required:
             value_row = rows.get(key)
@@ -586,8 +586,7 @@ class Validator:
 
     def validate_pipeline_minimums(self):
         dd = self.get_dd()
-        if len(dd.classes) < 1:
-            self.add('error', 'minimum_classes', 'At least one valid class row is required')
+        # Classes are not universally mandatory for sparse guidance/property-only templates.
         if len(dd.properties) < 1 and len(dd.classes) > 0:
             self.add('error', 'minimum_properties', 'At least one valid property row is required when classes are defined')
         require_assignments = len(dd.classes) > 0 and len(dd.properties) > 0
