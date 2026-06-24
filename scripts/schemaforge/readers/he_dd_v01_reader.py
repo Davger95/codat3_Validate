@@ -204,7 +204,13 @@ def _parse_classes(ws, meta: DictionaryMeta) -> list[DDClass]:
     for r in rows:
         designation = _str(r.get("Designation")) or _str(r.get("Bezeichnung")) or ""
         source_objekt_id = _str(r.get("Objekt-ID"))
+        bezeichnung = _str(r.get("Bezeichnung")) or ""
+        beschreibung = _str(r.get("Beschreibung")) or _str(r.get("Description")) or ""
+        if not any([source_objekt_id, designation, bezeichnung, beschreibung]):
+            continue
         code = source_objekt_id or slugify(designation)
+        if not code:
+            continue
         owned_uri = _str(r.get("GUID/URI")) or _safe_uri(base, code)
         predefined = _str(r.get("PredefinedType"))
         entity_raw = _str(r.get("IfcObject Entity"))
@@ -330,6 +336,13 @@ def _parse_objects_v20260619(ws, meta: DictionaryMeta) -> list[DDClass]:
     base = f"{_lindas_base(meta)}class/"
     classes = []
     for r in rows:
+        if not any([
+            _str(r.get("Objekt-ID")),
+            _str(r.get("Designation")),
+            _str(r.get("Bezeichnung")),
+            _str(r.get("Beschreibung")),
+        ]):
+            continue
         code = _str(r.get("Objekt-ID")) or slugify(_str(r.get("Designation")) or _str(r.get("Bezeichnung")) or "")
         if not code:
             continue

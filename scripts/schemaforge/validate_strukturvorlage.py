@@ -588,14 +588,14 @@ class Validator:
         dd = self.get_dd()
         if len(dd.classes) < 1:
             self.add('error', 'minimum_classes', 'At least one valid class row is required')
-        if len(dd.properties) < 1:
-            self.add('error', 'minimum_properties', 'At least one valid property row is required')
-        require_assignments = len(dd.classes) > 0
-        require_documents = len(dd.classes) > 0 or len(dd.class_properties) > 0
+        if len(dd.properties) < 1 and len(dd.classes) > 0:
+            self.add('error', 'minimum_properties', 'At least one valid property row is required when classes are defined')
+        require_assignments = len(dd.classes) > 0 and len(dd.properties) > 0
+        require_documents = len(dd.classes) > 0 and (len(dd.properties) > 0 or len(dd.class_properties) > 0)
         if require_assignments and len(dd.class_properties) < 1:
-            self.add('error', 'minimum_assignments', 'At least one valid class-property assignment is required when classes are defined')
+            self.add('error', 'minimum_assignments', 'At least one valid class-property assignment is required when both classes and properties are defined')
         if require_documents and len(getattr(dd, 'documents', [])) < 1:
-            self.add('error', 'minimum_documents', 'At least one document row is required for class-based or assignment-based source-governed output')
+            self.add('error', 'minimum_documents', 'At least one document row is required when class/property content is being defined for source-governed output')
 
     def allowed_values_for_property(self, prop_code: str) -> list[str]:
         dd = self.get_dd()
