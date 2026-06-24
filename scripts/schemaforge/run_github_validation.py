@@ -52,11 +52,11 @@ def main(argv=None):
     if not workbook.exists():
         raise FileNotFoundError(f'Workbook not found: {workbook}')
 
-    schemaforge_dir = workspace / 'scripts' / 'schemaforge'
-    if str(schemaforge_dir) not in sys.path:
-        sys.path.insert(0, str(schemaforge_dir))
+    scripts_dir = workspace / 'scripts'
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
 
-    import validate_strukturvorlage as validator_module
+    from schemaforge import validate_strukturvorlage as validator_module
 
     out_dir = workspace / 'SchemaForge_output'
     out_dir.mkdir(parents=True, exist_ok=True)
