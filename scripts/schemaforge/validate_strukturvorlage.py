@@ -37,7 +37,7 @@ REQUIRED_SHEETS_V20260619 = [
     'Data Template AreaMgmt',
 ]
 OPTIONAL_SHEETS = ['ConceptRelation']
-ALLOWED_LIFECYCLE = {'Preview', 'Active', 'Inactive'}
+ALLOWED_LIFECYCLE = {'Preview', 'Active', 'Inactive', 'Deprecated', 'Retired', 'Candidate', 'Recorded', 'Superseded', 'Incomplete'}
 ALLOWED_BASE_TYPES = {'STRING', 'INTEGER', 'REAL', 'BOOLEAN', 'TIME', 'DATETIME'}
 ALLOWED_REL_TYPES = {
     'skos:exactMatch',
@@ -212,8 +212,17 @@ class Validator:
             return
         rows = self._dict_rows()
         required = [
-            'OrganizationCode', 'DictionaryCode', 'DictionaryName (DE)', 'DictionaryName (FR)',
-            'DictionaryVersion', 'DictionaryUri'
+            'OrganizationCode',
+            'DictionaryCode',
+            'DictionaryName (DE)',
+            'DictionaryName (FR)',
+            'DictionaryVersion',
+            'DictionaryUri',
+            'LifecycleStatus',
+            'Owner / Publisher',
+            'Description (DE)',
+            'ContactEmail',
+            'PrimaryLanguage',
         ]
         for key in required:
             value_row = rows.get(key)
@@ -228,6 +237,18 @@ class Validator:
         uri = (rows.get('DictionaryUri') or [None])[0]
         if uri and not self.is_absolute_uri(uri):
             self.add('error', 'invalid_uri', f'DictionaryUri is not a valid absolute IRI: {uri}', sheet='Dictionary')
+        contact_email = (rows.get('ContactEmail') or [None])[0]
+        if contact_email and '@' not in contact_email:
+            self.add('error', 'invalid_contact_email', f'ContactEmail is invalid: {contact_email}', sheet='Dictionary')
+        primary_language = (rows.get('PrimaryLanguage') or [None])[0]
+        if primary_language and not re.match(r'^[a-z]{2}(?:-[A-Z]{2})?$', primary_language):
+            self.add('error', 'invalid_primary_language', f'PrimaryLanguage must be ISO-like language tag (e.g. de or de-CH), got: {primary_language}', sheet='Dictionary')
+        release_date = (rows.get('ReleaseDate') or [None])[0]
+        if release_date and not re.match(r'^\d{4}-\d{2}-\d{2}$', release_date):
+            self.add('error', 'invalid_release_date', f'ReleaseDate must be YYYY-MM-DD, got: {release_date}', sheet='Dictionary')
+        modified_date = (rows.get('ModifiedDate') or [None])[0]
+        if modified_date and not re.match(r'^\d{4}-\d{2}-\d{2}$', modified_date):
+            self.add('error', 'invalid_modified_date', f'ModifiedDate must be YYYY-MM-DD, got: {modified_date}', sheet='Dictionary')
 
     def is_valid_bsdd_identifier_uri(self, value: str) -> bool:
         return any(value.startswith(prefix) for prefix in VALID_BSDD_URI_PREFIXES)
