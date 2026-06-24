@@ -7,6 +7,10 @@ on:
         description: 'Optional relative path to the workbook (.xlsx). If empty, the workflow auto-detects the newest Strukturvorlage/Test workbook.'
         required: false
         default: ''
+      fail_on_validation_errors:
+        description: 'Fail the workflow when blocking validation errors exist. Set to false for example/test workbooks when you only want reports.'
+        required: false
+        default: 'false'
   push:
     paths:
       - '**/*.xlsx'
@@ -64,6 +68,7 @@ jobs:
           cat SchemaForge_output/github_validation_report.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fail if blocking validation errors exist
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.fail_on_validation_errors == 'true' }}
         run: |
           python - <<'PY'
           import json
