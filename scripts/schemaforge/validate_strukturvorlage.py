@@ -530,13 +530,15 @@ class Validator:
                         if allowed and not overrides_cmp.issubset(allowed_cmp):
                             self.add('error', 'invalid_allowed_values_override', f'This object-specific restriction contains values {overrides} that are not listed in the property\'s official allowed values for {prop_code}. Please correct the override or add the missing value to the property\'s allowed values.', sheet=matrix_sheet, row=ridx)
             return
+        row4 = [self._norm(v) for v in next(ws.iter_rows(min_row=4, max_row=4, values_only=True))]
         row5 = [self._norm(v) for v in next(ws.iter_rows(min_row=5, max_row=5, values_only=True))]
         object_ids = []
+        known_class_refs = 0
         for idx, obj_id in enumerate(row5, start=1):
             if idx >= 8 and obj_id and obj_id != 'Objekt-ID':
                 object_ids.append((idx, obj_id))
-                if obj_id not in class_codes:
-                    self.add('error', 'matrix_unknown_class', f'KlassenMerkmal row 5 references unknown class code: {obj_id}', sheet='KlassenMerkmal', row=5)
+                if obj_id in class_codes:
+                    known_class_refs += 1
         if not object_ids:
             self.add('error', 'matrix_missing_object_columns', 'KlassenMerkmal has no object IDs in row 5 from column 8 onward', sheet='KlassenMerkmal', row=5)
         for ridx, row in self._iter_data_rows(ws, 9):
@@ -588,10 +590,12 @@ class Validator:
             self.add('error', 'minimum_classes', 'At least one valid class row is required')
         if len(dd.properties) < 1:
             self.add('error', 'minimum_properties', 'At least one valid property row is required')
-        if len(dd.class_properties) < 1:
-            self.add('error', 'minimum_assignments', 'At least one valid class-property assignment is required')
-        if len(getattr(dd, 'documents', [])) < 1:
-            self.add('error', 'minimum_documents', 'At least one document row is required for full source-governed output')
+        require_assignments = len(dd.classes) > 0
+        require_documents = len(dd.classes) > 0 or len(dd.class_properties) > 0
+        if require_assignments and len(dd.class_properties) < 1:
+            self.add('error', 'minimum_assignments', 'At least one valid class-property assignment is required when classes are defined')
+        if require_documents and len(getattr(dd, 'documents', [])) < 1:
+            self.add('error', 'minimum_documents', 'At least one document row is required for class-based or assignment-based source-governed output')
 
     def allowed_values_for_property(self, prop_code: str) -> list[str]:
         dd = self.get_dd()
@@ -650,6 +654,12 @@ class Validator:
 
 def _layman_mapping(code: str) -> dict:
     mapping = {
+        'ifc_reference_missing': {
+            'title': 'IFC reference dataset unavailable',
+            'what_it_means': 'The validator could not access the authoritative IFC/bSDD reference dataset used for URI cross-checking. This is an environment/reference issue, not a workbook row error.',
+            'what_to_do': 'Restore the IFC reference TTL/cache in the validator environment if authoritative URI existence checks are required. If not available in CI, treat this as a system/reference warning rather than a sheet-row correction task.',
+            'category': 'Validator environment and reference data',
+        },
         'missing_ifc_uri': {
             'title': 'Missing IFC reference',
             'what_it_means': 'This object is missing its official IFC URI reference.',

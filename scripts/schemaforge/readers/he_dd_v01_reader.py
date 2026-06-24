@@ -78,11 +78,44 @@ def _detect_header_row(ws, required_marker: str) -> int:
     raise ValueError(f"Could not find header row containing {required_marker!r} in sheet {ws.title}")
 
 
+def _row_has_meaningful_content(row) -> bool:
+    meaningful = []
+    for v in row:
+        if v is None:
+            continue
+        s = str(v).strip()
+        if not s:
+            continue
+        meaningful.append(s)
+    if not meaningful:
+        return False
+    joined = ' '.join(meaningful).lower()
+    guidance_markers = [
+        'should reference',
+        'should match',
+        'fill if',
+        'leave empty',
+        'required human-readable',
+        'required registered source code',
+        'reference/list-based validation',
+        'optional external',
+        'optional proprietary/helper field',
+        'optional governance notes',
+        'optional maintenance notes',
+        'system generated canonical',
+        'required canonical',
+        'validator should',
+    ]
+    if any(marker in joined for marker in guidance_markers):
+        return False
+    return True
+
+
 def _row_dicts(ws, header_row: int, data_start: int) -> list[dict[str, object]]:
     headers = [_str(c.value) or "" for c in ws[header_row]]
     out = []
     for row in ws.iter_rows(min_row=data_start, values_only=True):
-        if any(v is not None and str(v).strip() for v in row):
+        if _row_has_meaningful_content(row):
             out.append(dict(zip(headers, row)))
     return out
 
