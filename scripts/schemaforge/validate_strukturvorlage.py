@@ -11,7 +11,10 @@ from urllib.parse import urlparse
 
 import openpyxl
 
-from readers.excel_reader import load_dd
+try:
+    from .readers.excel_reader import load_dd
+except ImportError:
+    from readers.excel_reader import load_dd
 
 WORKSPACE = Path('/home/Dave/.openclaw/workspace-datadict')
 BSDD_TTL = Path('/home/Dave/.openclaw/shared/ontologies/bsdd/ifc4.3-bsdd-harvested-official-api.ttl.tmp')
