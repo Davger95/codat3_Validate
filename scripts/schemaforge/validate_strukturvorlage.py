@@ -72,6 +72,66 @@ class Validator:
         self.dd_loaded = False
         self.ifc_uri_set_loaded = False
 
+    @staticmethod
+    def _row_has_meaningful_content(row) -> bool:
+        meaningful = []
+        for v in row:
+            if v is None:
+                continue
+            s = str(v).strip()
+            if not s:
+                continue
+            meaningful.append(s)
+        if not meaningful:
+            return False
+        joined = ' '.join(meaningful).lower()
+        guidance_markers = [
+            'should reference',
+            'should match',
+            'fill if',
+            'leave empty',
+            'required human label',
+            'required canonical',
+            'validator should',
+            'reference-based validation target',
+            'list-based validation',
+            'object columns: x = assigned',
+            'override values must match',
+            'system generated',
+            'optional external',
+            'required registered source code',
+            'required; valid',
+            'required de label',
+            'required en/canonical label',
+            'recommended de definition',
+            'recommended en definition',
+            'official ifc property uri',
+            'official ifc set reference',
+            'guid/uri: if applicable',
+            'objekt-id: system generated',
+            'bezeichnung: required',
+            'designation: required',
+            'document identification: optional',
+            'dokument uri: optional',
+            'dokument name: required',
+            'revision: recommended',
+            'owner: recommended',
+            'documentcode: optional',
+        ]
+        if any(marker in joined for marker in guidance_markers):
+            return False
+        if len(meaningful) == 1:
+            token = meaningful[0].lower()
+            if token.startswith('http://') or token.startswith('https://'):
+                return False
+        return True
+
+    def _iter_data_rows(self, ws, min_row: int):
+        for idx, row in enumerate(ws.iter_rows(min_row=min_row, values_only=True), start=min_row):
+            if not self._row_has_meaningful_content(row):
+                continue
+            yield idx, row
+
     def get_dd(self):
         if self.dd is None:
             self.dd = load_dd(self.workbook_path)
@@ -209,9 +269,7 @@ class Validator:
         ifc_uri_set = self.get_ifc_uri_set()
         document_source_codes = {d.get('SourceCode') for d in getattr(dd, 'documents', []) if d.get('SourceCode')}
         start_row = 10
-        for idx, row in enumerate(ws.iter_rows(min_row=start_row, values_only=True), start=start_row):
-            if not any(v is not None and str(v).strip() for v in row):
-                continue
+        for idx, row in self._iter_data_rows(ws, start_row):
             if self.is_v20260619_template():
                 obj_id = self._cell(row, 9)
                 obj_einordnung = self._cell(row, 10)
@@ -300,9 +358,7 @@ class Validator:
         else:
             value_ids = set()
         start_row = 8 if self.is_v20260619_template() else 4
-        for idx, row in enumerate(ws.iter_rows(min_row=start_row, values_only=True), start=start_row):
-            if not any(v is not None and str(v).strip() for v in row):
-                continue
+        for idx, row in self._iter_data_rows(ws, start_row):
             if self.is_v20260619_template():
                 prop_code = self._cell(row, 5)
                 merkmal = self._cell(row, 6)
@@ -451,9 +507,10 @@ class Validator:
             if not property_cols:
                 self.add('error', 'matrix_missing_property_columns', 'Data Template AreaMgmt has no property IDs in row 3 from column 5 onward', sheet=matrix_sheet, row=3)
             for ridx in range(6, ws.max_row + 1):
+                row_values = [ws.cell(ridx, c).value for c in range(1, ws.max_column + 1)]
                 class_code = self._cell([ws.cell(ridx, 1).value], 1)
                 class_label = self._cell([ws.cell(ridx, 2).value], 1)
-                if not any(self._cell([ws.cell(ridx, c).value], 1) for c in range(1, ws.max_column + 1)):
+                if not self._row_has_meaningful_content(row_values):
                     continue
                 if not class_code:
                     continue
@@ -482,10 +539,8 @@ class Validator:
                     self.add('error', 'matrix_unknown_class', f'KlassenMerkmal row 5 references unknown class code: {obj_id}', sheet='KlassenMerkmal', row=5)
         if not object_ids:
             self.add('error', 'matrix_missing_object_columns', 'KlassenMerkmal has no object IDs in row 5 from column 8 onward', sheet='KlassenMerkmal', row=5)
-        for ridx, row in enumerate(ws.iter_rows(min_row=9, values_only=True), start=9):
+        for ridx, row in self._iter_data_rows(ws, 9):
             vals = list(row)
-            if not any(v is not None and str(v).strip() for v in vals):
-                continue
             matrix_merkmal_id = self._cell(vals, 2)
             pset = self._cell(vals, 3)
             merkmal = self._cell(vals, 4)
