@@ -1,0 +1,19 @@
+Workbook: templates/HE_DD_Strukturvorlagev0.1__authoring-guidance_test.xlsx
+Branch: main
+Verified from local file, HEAD git blob, and origin/main git blob.
+
+Sheets in stored XLSX:
+1. Klassen
+2. Merkmale_Merkmalsgruppen
+3. Dokumente_Dokumentgruppen
+4. KlassenMerkmal
+5. Dictionary core
+6. Dictionary public
+7. ConceptRelation
+
+Dictionary tabs present in the actual workbook binary:
+- Dictionary core
+- Dictionary public
+
+Note:
+If GitHub/Office preview shows only one Dictionary tab, that preview is stale or mis-rendered; the XLSX stored in git contains both tabs.
