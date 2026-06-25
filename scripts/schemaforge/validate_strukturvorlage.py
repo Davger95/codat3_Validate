@@ -693,111 +693,111 @@ def _layman_mapping(code: str) -> dict:
     mapping = {
         'ifc_reference_missing': {
             'title': 'IFC reference dataset unavailable',
-            'what_it_means': 'The validator could not access the authoritative IFC/bSDD reference dataset used for URI cross-checking. This is an environment/reference issue, not a workbook row error.',
-            'what_to_do': 'Restore the IFC reference TTL/cache in the validator environment if authoritative URI existence checks are required. If not available in CI, treat this as a system/reference warning rather than a sheet-row correction task.',
+            'what_it_means': 'Der Validator konnte nicht auf das autoritative IFC/bSDD-Referenzdataset zugreifen, das für URI-Gegenprüfungen verwendet wird. Dies ist ein Umgebungs-/Referenzproblem und kein Fehler in einer Workbook-Zeile.',
+            'what_to_do': 'Stellen Sie die IFC reference TTL/cache in der Validator-Umgebung wieder her, falls autoritative URI-Existenzprüfungen erforderlich sind. Falls dies in CI nicht verfügbar ist, behandeln Sie dies als System-/Referenzwarnung und nicht als Korrekturaufgabe auf Sheet-/Row-Ebene.',
             'category': 'Validator environment and reference data',
         },
         'missing_ifc_uri': {
             'title': 'Missing IFC reference',
-            'what_it_means': 'This object is missing its official IFC URI reference.',
-            'what_to_do': 'Add the correct official IFC URI for this object.',
+            'what_it_means': 'Diesem Objekt fehlt die offizielle IFC URI reference.',
+            'what_to_do': 'Fügen Sie die korrekte offizielle IFC URI für dieses Objekt hinzu.',
             'category': 'Object definitions',
         },
         'missing_class_definition': {
             'title': 'Missing object definition',
-            'what_it_means': 'This object has no clear description/definition yet.',
-            'what_to_do': 'Add a short definition so users understand what the object means.',
+            'what_it_means': 'Dieses Objekt hat noch keine klare Beschreibung/Definition.',
+            'what_to_do': 'Fügen Sie eine kurze Definition hinzu, damit Benutzer verstehen, was das Objekt bedeutet.',
             'category': 'Object definitions',
         },
         'unknown_value_list_id': {
             'title': 'Value catalog ID is not registered',
-            'what_it_means': 'A property points to a value catalog ID that does not exist in the Wertekatalog tab.',
-            'what_to_do': 'Check the Werteliste-ID spelling or register the missing value catalog in Wertekatalog.',
+            'what_it_means': 'Ein Merkmal verweist auf eine value catalog ID, die im Tab Wertekatalog nicht existiert.',
+            'what_to_do': 'Prüfen Sie die Schreibweise der Werteliste-ID oder registrieren Sie den fehlenden value catalog in Wertekatalog.',
             'category': 'Value catalog issues',
         },
         'noncanonical_value_list_id': {
             'title': 'Value catalog ID does not follow the standard format',
-            'what_it_means': 'The value catalog ID exists but is not written in the canonical format expected by the standard.',
-            'what_to_do': 'Rename the Werteliste-ID to the canonical generated form shown by the validator.',
+            'what_it_means': 'Die Werteliste-ID ist vorhanden, aber nicht im kanonischen Format geschrieben, das vom Standard erwartet wird.',
+            'what_to_do': 'Benennen Sie die Werteliste-ID in die vom Validator gezeigte kanonische Form um.',
             'category': 'Value catalog issues',
         },
         'missing_ifc_property_uri_reference': {
             'title': 'Official IFC property URI missing',
-            'what_it_means': 'This property has no official IFC property URI reference.',
-            'what_to_do': 'If an official IFC property URI exists, add it. If none exists, you may leave it empty.',
+            'what_it_means': 'Dieses Merkmal hat keine offizielle Referenz auf eine IFC property URI.',
+            'what_to_do': 'Falls eine offizielle IFC property URI existiert, fügen Sie sie hinzu. Falls keine existiert, darf das Feld leer bleiben.',
             'category': 'Property definitions',
         },
         'missing_ifc_property_set_reference': {
             'title': 'Official IFC property-set reference missing',
-            'what_it_means': 'This property has no official IfcPropertySet or IfcQuantitySet reference.',
-            'what_to_do': 'Add the official IFC set reference if applicable; otherwise provide a Merkmalsgruppe.',
+            'what_it_means': 'Dieses Merkmal hat keine offizielle Referenz auf ein IfcPropertySet oder IfcQuantitySet.',
+            'what_to_do': 'Fügen Sie die offizielle IFC-Set-Referenz hinzu, falls sie anwendbar ist; andernfalls geben Sie eine Merkmalsgruppe an.',
             'category': 'Property definitions',
         },
         'missing_property_set_locator': {
             'title': 'No property grouping provided',
-            'what_it_means': 'This property has neither an official IFC property-set reference nor a local Merkmalsgruppe.',
-            'what_to_do': 'Provide an IfcPropertySet / IfcQuantitySet reference or add a Merkmalsgruppe.',
+            'what_it_means': 'Dieses Merkmal hat weder eine offizielle IFC property-set reference noch eine lokale Merkmalsgruppe.',
+            'what_to_do': 'Geben Sie eine IfcPropertySet / IfcQuantitySet reference an oder ergänzen Sie eine Merkmalsgruppe.',
             'category': 'Property definitions',
         },
         'unknown_property_set_reference': {
             'title': 'Property set reference is unknown',
-            'what_it_means': 'The PropertySet used in the template is not registered in the property catalog.',
-            'what_to_do': 'Use a registered IfcPropertySet, IfcQuantitySet, or Merkmalsgruppe value.',
+            'what_it_means': 'Das im Template verwendete PropertySet ist nicht im Merkmalskatalog registriert.',
+            'what_to_do': 'Verwenden Sie einen registrierten IfcPropertySet-, IfcQuantitySet- oder Merkmalsgruppe-Wert.',
             'category': 'Data template assignment issues',
         },
         'matrix_unknown_merkmal_id': {
             'title': 'Property ID in template area is unknown',
-            'what_it_means': 'The Data Template references a Merkmal-ID that is not registered in the property tab.',
-            'what_to_do': 'Use a Merkmal-ID that exists in Merkmale_Merkmalsgruppen.',
+            'what_it_means': 'Das Data Template referenziert eine Merkmal-ID, die im Property-Tab nicht registriert ist.',
+            'what_to_do': 'Verwenden Sie eine Merkmal-ID, die in Merkmale_Merkmalsgruppen existiert.',
             'category': 'Data template assignment issues',
         },
         'invalid_allowed_values_override': {
             'title': 'Selected values do not match the allowed values',
-            'what_it_means': 'The values selected for an object/property combination are not part of the official allowed values of that property.',
-            'what_to_do': 'Correct the values or extend the official value catalog if the missing values are truly needed.',
+            'what_it_means': 'Die für eine Objekt-/Merkmals-Kombination ausgewählten Werte gehören nicht zu den offiziellen Allowed Values dieses Merkmals.',
+            'what_to_do': 'Korrigieren Sie die Werte oder erweitern Sie den offiziellen Wertekatalog, falls die fehlenden Werte tatsächlich benötigt werden.',
             'category': 'Data template assignment issues',
         },
         'missing_source_code': {
             'title': 'Source code is missing',
-            'what_it_means': 'The source/provenance field is empty.',
-            'what_to_do': 'Provide a registered source code or use Organisation if no external source exists.',
+            'what_it_means': 'Das Feld für source/provenance ist leer.',
+            'what_to_do': 'Geben Sie einen registrierten source code an oder verwenden Sie Organisation, falls keine externe Quelle existiert.',
             'category': 'Document and source governance',
         },
         'unknown_source_code': {
             'title': 'Source code is not registered',
-            'what_it_means': 'A source was used that is not formally registered in the document/source register.',
-            'what_to_do': 'Register the source in Dokumente_Dokumentgruppen or use Organisation.',
+            'what_it_means': 'Es wurde eine source verwendet, die im document/source register nicht formell registriert ist.',
+            'what_to_do': 'Registrieren Sie die source in Dokumente_Dokumentgruppen oder verwenden Sie Organisation.',
             'category': 'Document and source governance',
         },
         'missing_document_code': {
             'title': 'Document code is missing',
-            'what_it_means': 'The canonical document identifier is missing.',
-            'what_to_do': 'Provide the canonical document code according to your governance rule.',
+            'what_it_means': 'Die kanonische document identifier fehlt.',
+            'what_to_do': 'Geben Sie den kanonischen document code gemäss Ihrer Governance-Regel an.',
             'category': 'Document and source governance',
         },
         'duplicate_document_code': {
             'title': 'Document code is used more than once',
-            'what_it_means': 'The same canonical document code appears multiple times.',
-            'what_to_do': 'Ensure every document code is unique.',
+            'what_it_means': 'Der gleiche kanonische document code kommt mehrfach vor.',
+            'what_to_do': 'Stellen Sie sicher, dass jeder document code eindeutig ist.',
             'category': 'Document and source governance',
         },
         'missing_ifc_type_object_entity': {
             'title': 'IFC type mapping is missing',
-            'what_it_means': 'An IFC object-level mapping exists, but no type-level mapping was provided.',
-            'what_to_do': 'Add the IFC type mapping if applicable; otherwise this can often be left as-is.',
+            'what_it_means': 'Es existiert ein IFC object-level mapping, aber es wurde kein type-level mapping angegeben.',
+            'what_to_do': 'Fügen Sie das IFC type mapping hinzu, falls es anwendbar ist; andernfalls kann es oft so belassen werden.',
             'category': 'Object definitions',
         },
         'missing_predefined_type': {
             'title': 'IFC predefined type is missing',
-            'what_it_means': 'No predefined type was provided for this object.',
-            'what_to_do': 'Add the predefined type if the IFC mapping requires one.',
+            'what_it_means': 'Für dieses Objekt wurde kein predefined type angegeben.',
+            'what_to_do': 'Fügen Sie den predefined type hinzu, falls das IFC mapping einen solchen verlangt.',
             'category': 'Object definitions',
         },
     }
     return mapping.get(code, {
         'title': code.replace('_', ' ').capitalize(),
-        'what_it_means': 'The validator found an issue that should be reviewed.',
-        'what_to_do': 'Open the referenced sheet and row, review the value, and correct it according to the workbook guidance.',
+        'what_it_means': 'Der Validator hat ein Problem gefunden, das geprüft werden sollte.',
+        'what_to_do': 'Öffnen Sie das referenzierte Sheet und die betroffene Row, prüfen Sie den Wert und korrigieren Sie ihn gemäss der Workbook-Guidance.',
         'category': 'Other validation issues',
     })
 
@@ -817,19 +817,19 @@ def render_markdown_report(report: dict) -> str:
     lines.append('')
     lines.append(f'**Workbook:** `{report.get("workbook")}`')
     lines.append('')
-    lines.append('## Overall result')
+    lines.append('## Gesamtergebnis')
     lines.append('')
-    lines.append(f'- Blocking errors: **{summary.get("errors", 0)}**')
-    lines.append(f'- Warnings: **{summary.get("warnings", 0)}**')
-    lines.append(f'- Normalizations / derived suggestions: **{summary.get("normalizations", 0)}**')
-    lines.append(f'- Pipeline valid: **{summary.get("pipeline_valid", False)}**')
+    lines.append(f'- Blockierende Fehler: **{summary.get("errors", 0)}**')
+    lines.append(f'- Warnungen: **{summary.get("warnings", 0)}**')
+    lines.append(f'- Normalisierungen / abgeleitete Hinweise: **{summary.get("normalizations", 0)}**')
+    lines.append(f'- Pipeline gültig: **{summary.get("pipeline_valid", False)}**')
     lines.append('')
     if summary.get('errors', 0) > 0:
-        lines.append('> The workbook is **not ready for a clean pass yet**. Please review the blocking errors first.')
+        lines.append('> Das Workbook ist **noch nicht bereit für einen fehlerfreien Durchlauf**. Bitte prüfen Sie zuerst die blockierenden Fehler.')
     else:
-        lines.append('> No blocking validation errors were found. Please still review warnings and normalization notes.')
+        lines.append('> Es wurden keine blockierenden Validierungsfehler gefunden. Bitte prüfen Sie trotzdem die Warnungen und Normalisierungshinweise.')
     lines.append('')
-    lines.append('## Findings by topic')
+    lines.append('## Befunde nach Thema')
     lines.append('')
     for category in sorted(grouped.keys()):
         lines.append(f'### {category}')
@@ -844,15 +844,15 @@ def render_markdown_report(report: dict) -> str:
                 where.append(f"Cell: `{f['cell']}`")
             lines.append(f"- **{meta['title']}** ({f['level'].upper()})")
             if where:
-                lines.append(f"  - Where: {', '.join(where)}")
-            lines.append(f"  - What it means: {meta['what_it_means']}")
-            lines.append(f"  - What to do: {meta['what_to_do']}")
-            lines.append(f"  - Technical detail: `{f['code']}` — {f['message']}")
+                lines.append(f"  - Ort: {', '.join(where)}")
+            lines.append(f"  - Bedeutung: {meta['what_it_means']}")
+            lines.append(f"  - Empfohlene Korrektur: {meta['what_to_do']}")
+            lines.append(f"  - Technisches Detail: `{f['code']}` — {f['message']}")
             lines.append('')
-    lines.append('## Normalization notes')
+    lines.append('## Normalisierungshinweise')
     lines.append('')
     if not normalizations:
-        lines.append('- No automatic normalizations or derivation suggestions were recorded.')
+        lines.append('- Es wurden keine automatischen Normalisierungen oder Ableitungshinweise erfasst.')
     else:
         for n in normalizations:
             where = []
@@ -863,9 +863,9 @@ def render_markdown_report(report: dict) -> str:
             if n.get('column'):
                 where.append(f"Field: `{n['column']}`")
             lines.append(f"- {'; '.join(where)}")
-            lines.append(f"  - Original: `{n.get('original_value')}`")
-            lines.append(f"  - Normalized / derived: `{n.get('normalized_value')}`")
-            lines.append(f"  - Reason: {n.get('reason')}")
+            lines.append(f"  - Originalwert: `{n.get('original_value')}`")
+            lines.append(f"  - Normalisiert / abgeleitet: `{n.get('normalized_value')}`")
+            lines.append(f"  - Begründung: {n.get('reason')}")
             lines.append('')
     return '\n'.join(lines) + '\n'
 
