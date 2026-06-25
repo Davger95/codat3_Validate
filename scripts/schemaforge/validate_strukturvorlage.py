@@ -254,31 +254,18 @@ class Validator:
             self.add('error', 'invalid_uri', f'DictionaryUri is not a valid absolute IRI: {uri}', sheet=core_sheet)
 
         if public_sheet:
-            public_required_if_present = [
-                'Owner / Publisher',
-                'Description (DE)',
-                'ContactEmail',
-                'PrimaryLanguage',
-            ]
-            public_has_values = any(v for k, (v, _) in public_rows.items() if k and v)
-            if public_has_values:
-                for key in public_required_if_present:
-                    value_row = public_rows.get(key)
-                    if not value_row or not value_row[0]:
-                        self.add('error', 'missing_dictionary_public_field', f'Missing required Dictionary public value once public tab is used: {key}', sheet=public_sheet, row=value_row[1] if value_row else None)
-
             contact_email = (public_rows.get('ContactEmail') or [None])[0]
             if contact_email and '@' not in contact_email:
-                self.add('error', 'invalid_contact_email', f'ContactEmail is invalid: {contact_email}', sheet=public_sheet)
+                self.add('warning', 'invalid_contact_email_public', f'ContactEmail in Dictionary public is invalid: {contact_email}', sheet=public_sheet)
             primary_language = (public_rows.get('PrimaryLanguage') or [None])[0]
             if primary_language and not re.match(r'^[a-z]{2}(?:-[A-Z]{2})?$', primary_language):
-                self.add('error', 'invalid_primary_language', f'PrimaryLanguage must be ISO-like language tag (e.g. de or de-CH), got: {primary_language}', sheet=public_sheet)
+                self.add('warning', 'invalid_primary_language_public', f'PrimaryLanguage in Dictionary public should be ISO-like language tag (e.g. de or de-CH), got: {primary_language}', sheet=public_sheet)
             release_date = (public_rows.get('ReleaseDate') or [None])[0]
             if release_date and not re.match(r'^\d{4}-\d{2}-\d{2}$', release_date):
-                self.add('error', 'invalid_release_date', f'ReleaseDate must be YYYY-MM-DD, got: {release_date}', sheet=public_sheet)
+                self.add('warning', 'invalid_release_date_public', f'ReleaseDate in Dictionary public should be YYYY-MM-DD, got: {release_date}', sheet=public_sheet)
             modified_date = (public_rows.get('ModifiedDate') or [None])[0]
             if modified_date and not re.match(r'^\d{4}-\d{2}-\d{2}$', modified_date):
-                self.add('error', 'invalid_modified_date', f'ModifiedDate must be YYYY-MM-DD, got: {modified_date}', sheet=public_sheet)
+                self.add('warning', 'invalid_modified_date_public', f'ModifiedDate in Dictionary public should be YYYY-MM-DD, got: {modified_date}', sheet=public_sheet)
 
     def is_valid_bsdd_identifier_uri(self, value: str) -> bool:
         return any(value.startswith(prefix) for prefix in VALID_BSDD_URI_PREFIXES)
