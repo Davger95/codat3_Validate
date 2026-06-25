@@ -144,6 +144,64 @@ class Validator:
             self.ifc_uri_set_loaded = True
         return self.ifc_uri_set
 
+    @staticmethod
+    def _normalize_predefined_type(value: str | None) -> str | None:
+        if not value:
+            return None
+        normalized = str(value).strip().replace(' ', '').replace('-', '_')
+        return normalized.upper() if normalized else None
+
+    @staticmethod
+    def _extract_ifc_class_from_uri(ifc_uri: str | None) -> str | None:
+        if not ifc_uri or '/class/' not in ifc_uri:
+            return None
+        tail = ifc_uri.split('/class/', 1)[1].strip()
+        return Validator._extract_base_ifc_entity(tail)
+
+    def _extract_base_ifc_entity(self, ifc_entity: str | None) -> str | None:
+        if not ifc_entity or not str(ifc_entity).strip().startswith('Ifc'):
+            return None
+        candidate = str(ifc_entity).strip()
+        ifc_uri_set = self.get_ifc_uri_set()
+        if candidate_uri := f'https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/{candidate}':
+            if not ifc_uri_set or candidate_uri in ifc_uri_set:
+                return candidate
+        normalized = candidate.upper()
+        for uri in ifc_uri_set:
+            if '/class/' not in uri:
+                continue
+            tail = uri.split('/class/', 1)[1]
+            if tail.upper() == normalized and tail.startswith('Ifc'):
+                return tail
+            if tail.startswith(candidate) and len(tail) > len(candidate):
+                suffix = tail[len(candidate):]
+                if suffix == suffix.upper() and any(ch.isalpha() for ch in suffix):
+                    return candidate
+        m = re.match(r'^(Ifc[A-Za-z]+)', candidate)
+        return m.group(1) if m else candidate
+
+    def validate_predefined_type(self, ifc_obj: str | None, predefined: str | None, ifc_uri: str | None, sheet_name: str, row_idx: int):
+        if not predefined:
+            return
+        normalized_predefined = self._normalize_predefined_type(predefined)
+        if not normalized_predefined:
+            return
+        ifc_uri_set = self.get_ifc_uri_set()
+        if not ifc_obj:
+            self.add('warning', 'predefined_type_without_ifc_entity', f'PredefinedType is filled but IfcObject Entity is missing, so authoritative validation cannot be completed: {predefined}', sheet=sheet_name, row=row_idx)
+            return
+        base_ifc_obj = self._extract_base_ifc_entity(ifc_obj) or ifc_obj
+        candidate_uri = f'https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/{base_ifc_obj}{normalized_predefined}'
+        if ifc_uri_set and candidate_uri not in ifc_uri_set:
+            self.add('error', 'invalid_predefined_type', f'PredefinedType {predefined} is not a valid authoritative IFC predefined type for {base_ifc_obj}', sheet=sheet_name, row=row_idx)
+            return
+        derived_ifc_class = self._extract_ifc_class_from_uri(ifc_uri)
+        if derived_ifc_class and derived_ifc_class != base_ifc_obj:
+            self.add('error', 'ifc_uri_entity_mismatch', f'IFC URI implies base IFC class {derived_ifc_class}, but IfcObject Entity is {ifc_obj}', sheet=sheet_name, row=row_idx)
+            return
+        if ifc_uri and ifc_uri != candidate_uri:
+            self.add('error', 'ifc_uri_predefined_mismatch', f'IFC URI {ifc_uri} does not match the authoritative IFC predefined-type URI implied by IfcObject Entity + PredefinedType: {candidate_uri}', sheet=sheet_name, row=row_idx)
+
     def add(self, level: str, code: str, message: str, sheet: str | None = None, cell: str | None = None, row: int | None = None):
         self.findings.append(Finding(level, code, message, sheet, cell, row))
 
@@ -367,8 +425,7 @@ class Validator:
                 self.add('error', 'missing_ifc_object_entity', 'Klassen row missing IfcObject Entity', sheet=sheet_name, row=idx)
             if not ifc_type:
                 self.add('warning', 'missing_ifc_type_object_entity', 'IfcTypeObject Entity is missing; this may be acceptable if mapping exists only on object level', sheet=sheet_name, row=idx)
-            if not predefined:
-                self.add('warning', 'missing_predefined_type', 'PredefinedType is missing; this may be acceptable if only object-level mapping is intended', sheet=sheet_name, row=idx)
+            self.validate_predefined_type(ifc_obj, predefined, ifc_uri, sheet_name, idx)
             if not self.is_v20260619_template():
                 classification_in_use = bool(source or identification or final_name)
                 if not source:
