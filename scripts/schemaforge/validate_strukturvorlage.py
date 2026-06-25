@@ -23,7 +23,7 @@ VALID_BSDD_URI_PREFIXES = (
     'https://identifier.buildingsmart.org/uri/buildingsmart/ifc/',
 )
 REQUIRED_SHEETS = [
-    'Dictionary',
+    'Dictionary core',
     'Klassen',
     'Merkmale_Merkmalsgruppen',
     'Dokumente_Dokumentgruppen',
@@ -192,13 +192,29 @@ class Validator:
         return {'Objekte', 'Wertekatalog', 'Data Template AreaMgmt'}.issubset(set(self.wb.sheetnames))
 
     def validate_required_sheets(self):
-        required = REQUIRED_SHEETS_V20260619 if self.is_v20260619_template() else REQUIRED_SHEETS
+        if self.is_v20260619_template():
+            required = REQUIRED_SHEETS_V20260619
+        elif 'Dictionary core' in self.wb.sheetnames or 'Dictionary public' in self.wb.sheetnames:
+            required = REQUIRED_SHEETS
+        else:
+            required = [
+                'Dictionary',
+                'Klassen',
+                'Merkmale_Merkmalsgruppen',
+                'Dokumente_Dokumentgruppen',
+                'KlassenMerkmal',
+            ]
         missing = [s for s in required if s not in self.wb.sheetnames]
         for sheet in missing:
             self.add('error', 'missing_sheet', f'Missing required sheet: {sheet}', sheet=sheet)
 
-    def _dict_rows(self) -> dict[str, tuple[str | None, int]]:
-        ws = self.wb['Dictionary']
+    def _dictionary_sheet_names(self) -> tuple[str | None, str | None]:
+        core = 'Dictionary core' if 'Dictionary core' in self.wb.sheetnames else ('Dictionary' if 'Dictionary' in self.wb.sheetnames else None)
+        public = 'Dictionary public' if 'Dictionary public' in self.wb.sheetnames else None
+        return core, public
+
+    def _dict_rows(self, sheet_name: str) -> dict[str, tuple[str | None, int]]:
+        ws = self.wb[sheet_name]
         rows = {}
         for i, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
             field = row[0] if len(row) > 0 else None
@@ -208,47 +224,61 @@ class Validator:
         return rows
 
     def validate_dictionary(self):
-        if 'Dictionary' not in self.wb.sheetnames:
+        core_sheet, public_sheet = self._dictionary_sheet_names()
+        if not core_sheet:
             return
-        rows = self._dict_rows()
-        required = [
+        core_rows = self._dict_rows(core_sheet)
+        public_rows = self._dict_rows(public_sheet) if public_sheet else {}
+
+        core_required = [
             'OrganizationCode',
             'DictionaryCode',
             'DictionaryName (DE)',
-            'DictionaryName (FR)',
             'DictionaryVersion',
             'DictionaryUri',
             'LifecycleStatus',
-            'Owner / Publisher',
-            'Description (DE)',
-            'ContactEmail',
-            'PrimaryLanguage',
         ]
-        for key in required:
-            value_row = rows.get(key)
+        for key in core_required:
+            value_row = core_rows.get(key)
             if not value_row or not value_row[0]:
-                self.add('error', 'missing_dictionary_field', f'Missing required dictionary value: {key}', sheet='Dictionary', row=value_row[1] if value_row else None)
-        status = (rows.get('LifecycleStatus') or [None])[0]
+                self.add('error', 'missing_dictionary_field', f'Missing required dictionary core value: {key}', sheet=core_sheet, row=value_row[1] if value_row else None)
+
+        status = (core_rows.get('LifecycleStatus') or [None])[0]
         if status and status not in ALLOWED_LIFECYCLE:
-            self.add('error', 'invalid_lifecycle', f'Invalid LifecycleStatus: {status}', sheet='Dictionary')
-        version = (rows.get('DictionaryVersion') or [None])[0]
+            self.add('error', 'invalid_lifecycle', f'Invalid LifecycleStatus: {status}', sheet=core_sheet)
+        version = (core_rows.get('DictionaryVersion') or [None])[0]
         if version and not SEMVER_RE.match(version):
-            self.add('error', 'invalid_semver', f'DictionaryVersion must be semantic version, got: {version}', sheet='Dictionary')
-        uri = (rows.get('DictionaryUri') or [None])[0]
+            self.add('error', 'invalid_semver', f'DictionaryVersion must be semantic version, got: {version}', sheet=core_sheet)
+        uri = (core_rows.get('DictionaryUri') or [None])[0]
         if uri and not self.is_absolute_uri(uri):
-            self.add('error', 'invalid_uri', f'DictionaryUri is not a valid absolute IRI: {uri}', sheet='Dictionary')
-        contact_email = (rows.get('ContactEmail') or [None])[0]
-        if contact_email and '@' not in contact_email:
-            self.add('error', 'invalid_contact_email', f'ContactEmail is invalid: {contact_email}', sheet='Dictionary')
-        primary_language = (rows.get('PrimaryLanguage') or [None])[0]
-        if primary_language and not re.match(r'^[a-z]{2}(?:-[A-Z]{2})?$', primary_language):
-            self.add('error', 'invalid_primary_language', f'PrimaryLanguage must be ISO-like language tag (e.g. de or de-CH), got: {primary_language}', sheet='Dictionary')
-        release_date = (rows.get('ReleaseDate') or [None])[0]
-        if release_date and not re.match(r'^\d{4}-\d{2}-\d{2}$', release_date):
-            self.add('error', 'invalid_release_date', f'ReleaseDate must be YYYY-MM-DD, got: {release_date}', sheet='Dictionary')
-        modified_date = (rows.get('ModifiedDate') or [None])[0]
-        if modified_date and not re.match(r'^\d{4}-\d{2}-\d{2}$', modified_date):
-            self.add('error', 'invalid_modified_date', f'ModifiedDate must be YYYY-MM-DD, got: {modified_date}', sheet='Dictionary')
+            self.add('error', 'invalid_uri', f'DictionaryUri is not a valid absolute IRI: {uri}', sheet=core_sheet)
+
+        if public_sheet:
+            public_required_if_present = [
+                'Owner / Publisher',
+                'Description (DE)',
+                'ContactEmail',
+                'PrimaryLanguage',
+            ]
+            public_has_values = any(v for k, (v, _) in public_rows.items() if k and v)
+            if public_has_values:
+                for key in public_required_if_present:
+                    value_row = public_rows.get(key)
+                    if not value_row or not value_row[0]:
+                        self.add('error', 'missing_dictionary_public_field', f'Missing required Dictionary public value once public tab is used: {key}', sheet=public_sheet, row=value_row[1] if value_row else None)
+
+            contact_email = (public_rows.get('ContactEmail') or [None])[0]
+            if contact_email and '@' not in contact_email:
+                self.add('error', 'invalid_contact_email', f'ContactEmail is invalid: {contact_email}', sheet=public_sheet)
+            primary_language = (public_rows.get('PrimaryLanguage') or [None])[0]
+            if primary_language and not re.match(r'^[a-z]{2}(?:-[A-Z]{2})?$', primary_language):
+                self.add('error', 'invalid_primary_language', f'PrimaryLanguage must be ISO-like language tag (e.g. de or de-CH), got: {primary_language}', sheet=public_sheet)
+            release_date = (public_rows.get('ReleaseDate') or [None])[0]
+            if release_date and not re.match(r'^\d{4}-\d{2}-\d{2}$', release_date):
+                self.add('error', 'invalid_release_date', f'ReleaseDate must be YYYY-MM-DD, got: {release_date}', sheet=public_sheet)
+            modified_date = (public_rows.get('ModifiedDate') or [None])[0]
+            if modified_date and not re.match(r'^\d{4}-\d{2}-\d{2}$', modified_date):
+                self.add('error', 'invalid_modified_date', f'ModifiedDate must be YYYY-MM-DD, got: {modified_date}', sheet=public_sheet)
 
     def is_valid_bsdd_identifier_uri(self, value: str) -> bool:
         return any(value.startswith(prefix) for prefix in VALID_BSDD_URI_PREFIXES)

@@ -1,7 +1,7 @@
 """
 SchemaForge i14y Pipeline — metadata_reader.py
 ===============================================
-Reads the Dictionary metadata tab from the KBOB DD Excel file
+Reads the Dictionary core / Dictionary public metadata tabs from the DD Excel file
 and returns a typed DictionaryMetadata dataclass.
 
 This is the single source of truth for all i14y metadata —
@@ -113,35 +113,7 @@ def _split_multi(value: Optional[str]) -> list[str]:
     return parts
 
 
-def read_metadata(excel_path: str | Path) -> DictionaryMetadata:
-    """
-    Read Dictionary metadata tab from the DD Excel and return DictionaryMetadata.
-
-    Reads the 'Dictionary' sheet. Expects rows of the form:
-        (FieldName, Value, ...)
-
-    Skips section headers (rows where Value is None and FieldName starts with '──').
-    Unknown fields are silently ignored.
-
-    Args:
-        excel_path: Path to the DD Excel file (e.g. DD_KBOB_v0.4.xlsx)
-
-    Returns:
-        DictionaryMetadata with all available fields populated.
-        Fields with placeholder/empty values are set to None.
-
-    Raises:
-        ValueError: if required fields (title_de, dictionary_code, version) are missing.
-    """
-    excel_path = Path(excel_path).resolve()
-    wb = openpyxl.load_workbook(str(excel_path), read_only=True, data_only=True)
-
-    if "Dictionary" not in wb.sheetnames:
-        raise ValueError(f"No 'Dictionary' sheet in {excel_path}")
-
-    ws = wb["Dictionary"]
-
-    # Build field → value map
+def _read_sheet_data(ws) -> dict[str, Optional[str]]:
     data: dict[str, Optional[str]] = {}
     for row in ws.iter_rows(values_only=True):
         field_name = _clean(row[0]) if row else None
@@ -153,6 +125,41 @@ def read_metadata(excel_path: str | Path) -> DictionaryMetadata:
             continue
         value = _clean(row[1]) if len(row) > 1 else None
         data[field_name] = value
+    return data
+
+
+def read_metadata(excel_path: str | Path) -> DictionaryMetadata:
+    """
+    Read Dictionary metadata tabs from the DD Excel and return DictionaryMetadata.
+
+    Preferred structure:
+      - 'Dictionary core'   → mandatory minimal authoring block
+      - 'Dictionary public' → optional extended publication block
+
+    Backward compatibility:
+      - if only 'Dictionary' exists, read from that sheet.
+
+    Expects rows of the form:
+        (FieldName, Value, ...)
+
+    Skips section headers (rows where Value is None and FieldName starts with '──').
+    Unknown fields are silently ignored.
+    """
+    excel_path = Path(excel_path).resolve()
+    wb = openpyxl.load_workbook(str(excel_path), read_only=True, data_only=True)
+
+    if "Dictionary core" in wb.sheetnames:
+        core_sheet = "Dictionary core"
+        public_sheet = "Dictionary public" if "Dictionary public" in wb.sheetnames else None
+    elif "Dictionary" in wb.sheetnames:
+        core_sheet = "Dictionary"
+        public_sheet = None
+    else:
+        raise ValueError(f"No 'Dictionary core' or legacy 'Dictionary' sheet in {excel_path}")
+
+    core_data = _read_sheet_data(wb[core_sheet])
+    public_data = _read_sheet_data(wb[public_sheet]) if public_sheet else {}
+    data = {**core_data, **public_data}
 
     wb.close()
 
@@ -237,11 +244,11 @@ def validate_metadata(meta: DictionaryMetadata) -> list[str]:
     """
     warnings = []
     if not meta.description_de:
-        warnings.append("Description (DE) is missing — required for i14y publication")
+        warnings.append("Description (DE) is missing — required if Dictionary public is used for i14y publication")
     if not meta.description_fr:
         warnings.append("Description (FR) is missing — recommended for Swiss federal datasets")
     if not meta.contact_email:
-        warnings.append("ContactEmail is missing — required for i14y contact point")
+        warnings.append("ContactEmail is missing — required if Dictionary public is used for i14y publication")
     if not meta.sparql_endpoint and not meta.ttl_download_url:
         warnings.append("No distribution URL (SPARQL_Endpoint or TTL_Download_URL) — dataset will have no distribution")
     if not meta.release_date:
