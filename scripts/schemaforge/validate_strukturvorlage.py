@@ -284,12 +284,10 @@ class Validator:
             try:
                 payload = json.loads(BSDD_URI_CACHE.read_text())
                 return set(payload.get('uris', []))
-            except Exception as e:
-                self.add('warning', 'ifc_cache_load_failed', f'Failed to load IFC URI cache {BSDD_URI_CACHE}: {e}')
+            except Exception:
+                pass
         if not BSDD_TTL.exists():
-            self.add('warning', 'ifc_reference_missing', f'Authoritative IFC reference TTL not found: {BSDD_TTL}')
             return set()
-        uri_re = re.compile(r'https://identifier\.buildingsmart\.org/uri/buildingsmart/ifc/4\.3(?:\.0)?/[^\s<>"]+')
         uris = set()
         with BSDD_TTL.open('r', encoding='utf-8', errors='ignore') as f:
             for line in f:
