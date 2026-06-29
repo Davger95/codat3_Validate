@@ -161,9 +161,12 @@ def _default_meta(path: Path) -> DictionaryMeta:
 
 
 def _parse_dictionary_if_present(wb, path: Path) -> DictionaryMeta:
-    if "Dictionary" not in wb.sheetnames:
+    if "Dictionary_core" in wb.sheetnames:
+        ws = wb["Dictionary_core"]
+    elif "Dictionary" in wb.sheetnames:
+        ws = wb["Dictionary"]
+    else:
         return _default_meta(path)
-    ws = wb["Dictionary"]
     meta = _default_meta(path)
     for row in ws.iter_rows(min_row=2, values_only=True):
         field_name = _str(row[0]) if len(row) > 0 else None
@@ -358,7 +361,7 @@ def _parse_objects_v20260619(ws, meta: DictionaryMeta) -> list[DDClass]:
             parent_class_code=_str(r.get("Objekt-Einordnung ")) or _str(r.get("Objekt-Einordnung")),
             ifc_entity_code=_str(r.get("IfcObject Entity")),
             ifc_predefined_type=None,
-            ifc_uri=_str(r.get("GUID/URI_1")) or _str(r.get("IFC URI")),
+            ifc_uri=_str(r.get("Objekte.IFC_URI")) or _str(r.get("IFC_URI")) or _str(r.get("GUID/URI_1")) or _str(r.get("IFC URI")),
             rds_reference=None,
             crb_code=None,
             status="Preview",
@@ -375,7 +378,7 @@ def _parse_properties_v20260619(ws, value_ws, meta: DictionaryMeta) -> tuple[lis
     value_rows = _row_dicts(value_ws, header_row=3, data_start=10) if value_ws is not None else []
     value_map = {}
     for vr in value_rows:
-        raw_id = _str(vr.get("Wertekatalog-ID"))
+        raw_id = _str(vr.get("Werte-ID"))
         if raw_id:
             value_map[raw_id] = vr
     value_base = f"{_lindas_base(meta)}allowed-value/"
@@ -473,7 +476,7 @@ def _parse_matrix_v20260619(ws, properties: list[DDProperty]) -> list[DDClassPro
             prop_ids.append((col_idx, prop_code))
     cps = []
     prop_index = {p.code: p for p in properties}
-    for row_idx in range(6, ws.max_row + 1):
+    for row_idx in range(8, ws.max_row + 1):
         class_code = _str(ws.cell(row_idx, 1).value)
         if not class_code:
             continue
@@ -505,7 +508,7 @@ def load_he_dd_v20260619(path: Path) -> DataDictionary:
         "OrganizationCode": meta.org_code or "bdch",
     })
     classes = _parse_objects_v20260619(wb["Objekte"], meta)
-    properties, allowed_values = _parse_properties_v20260619(wb["Merkmale_Merkmalsgruppen"], wb["Wertekatalog"], meta)
+    properties, allowed_values = _parse_properties_v20260619(wb["Merkmale_Merkmalsgruppen"], wb["Werte"], meta)
     class_properties = _parse_matrix_v20260619(wb["Data Template AreaMgmt"], properties)
     dd = DataDictionary(
         source_file=path,
@@ -517,6 +520,231 @@ def load_he_dd_v20260619(path: Path) -> DataDictionary:
         concept_relations=[],
     )
     setattr(dd, "documents", _parse_documents_v20260619(wb["Dokumente_Dokumentgruppen"], meta))
+    return dd
+
+
+def _parse_objects_abgeglichen(ws, meta: DictionaryMeta) -> list[DDClass]:
+    rows = _row_dicts(ws, header_row=3, data_start=10)
+    base = f"{_lindas_base(meta)}class/"
+    classes = []
+    for r in rows:
+        code = _str(r.get("Objekt-ID"))
+        if not code:
+            continue
+        cls = DDClass(
+            code=code,
+            class_type="Class",
+            name_de=_str(r.get("Bezeichnung")) or "",
+            name_fr=_str(r.get("Désignation (FR)")) or _str(r.get("FR")) or "",
+            name_en=_str(r.get("Designation")) or _str(r.get("Bezeichnung")) or "",
+            definition_de=_str(r.get("Beschreibung")) or "",
+            definition_fr=_str(r.get("Beschreibung (FR)")) or "",
+            owned_uri=_str(r.get("GUID/URI")) or _safe_uri(base, code),
+            parent_class_code=_str(r.get("Objekt-Einordnung ")) or _str(r.get("Objekt-Einordnung")),
+            ifc_entity_code=_normalize_ifc_entity(_str(r.get("IfcObject Entity")), _str(r.get("PredefinedType"))),
+            ifc_predefined_type=_str(r.get("PredefinedType")),
+            ifc_uri=_str(r.get("Objekte.IFC_URI")) or _str(r.get("IFC_URI")) or _str(r.get("GUID/URI_1")) or _str(r.get("IFC URI")),
+            rds_reference=_str(r.get("Klassifikationen")),
+            crb_code=None,
+            status=_str(r.get("Status")) or "Preview",
+            document_reference=_str(r.get("Herkunft (PROV)")),
+            countries_of_use="CH",
+        )
+        setattr(cls, "name_it", _str(r.get("Designazione (IT)")) or _str(r.get("IT")) or "")
+        setattr(cls, "definition_it", _str(r.get("Beschreibung (IT)")) or "")
+        setattr(cls, "ifc_type_object_entity_code", _str(r.get("IfcTypeObject Entity")))
+        setattr(cls, "object_type", _str(r.get("ObjectType")))
+        setattr(cls, "status", _str(r.get("Status")) or "Preview")
+        setattr(cls, "version_date", _str(r.get("Versionsdatum")))
+        setattr(cls, "related_document", _str(r.get("Objekte.RelatedDocument (Document-ID)")) or _str(r.get("RelatedDocument (Document-ID)")) or _str(r.get("RelatedDocument")) or 'Organisation')
+        classes.append(cls)
+    return classes
+
+
+def _parse_properties_abgeglichen(ws, value_ws, meta: DictionaryMeta) -> tuple[list[DDProperty], list[DDAllowedValue]]:
+    rows = _row_dicts(ws, header_row=2, data_start=8)
+    value_rows = _row_dicts(value_ws, header_row=3, data_start=10) if value_ws is not None else []
+    value_map = {}
+    for vr in value_rows:
+        raw_id = _str(vr.get("Werteliste-ID")) or _str(vr.get("Werte-ID"))
+        if raw_id:
+            value_map[raw_id] = vr
+    value_base = f"{_lindas_base(meta)}allowed-value/"
+    prop_base = f"{_lindas_base(meta)}property/"
+    props = []
+    avs = []
+    for r in rows:
+        code = _str(r.get("Merkmal-ID")) or _str(r.get("Merkmal-Code"))
+        if not code:
+            continue
+        value_list_id = _str(r.get("Werteliste-ID"))
+        value_row = value_map.get(value_list_id or "")
+        enum_values_raw = _str(value_row.get("EnumerationValues\n(EN)")) if value_row else None
+        if not enum_values_raw and value_row:
+            enum_values_raw = _str(value_row.get("Werteliste\n(DE)")) or _str(value_row.get("Lista valori\n(IT)")) or _str(value_row.get("Liste de valeurs\n(FR)"))
+        vals = _split_values(enum_values_raw)
+        prop = DDProperty(
+            code=code,
+            name_de=_str(r.get("Merkmal")) or "",
+            name_fr=_str(r.get("FR")) or _str(r.get("Désignation (FR)")) or "",
+            name_en=_str(r.get("Property")) or _str(r.get("Merkmal")) or "",
+            definition_de=_str(r.get("Beschreibung")) or "",
+            definition_fr=_str(r.get("Beschreibung (FR)")) or "",
+            owned_uri=_str(r.get("GUID/URI")) or _safe_uri(prop_base, code),
+            data_type=_str(r.get("DataType\n(Base Type)")) or "STRING",
+            data_type_ifc=_str(r.get("DataType\n(IFC)")),
+            property_value_kind=_infer_property_value_kind(vals),
+            unit_label=_str(value_row.get("Einheiten")) if value_row else None,
+            enumeration_values=",".join(vals) if vals else None,
+            ifc_property_uri=_str(r.get("GUID/URI_1")),
+            ifc_pset_uri=_str(r.get("IfcPropertySet (Pset)\nIfcQuantitySet (Qto)")),
+            property_set_name=None,
+            rds_reference=None,
+            status=_str(r.get("Status")) or "Preview",
+        )
+        setattr(prop, "name_it", _str(r.get("IT")) or _str(r.get("Designazione (IT)")) or "")
+        setattr(prop, "definition_it", _str(r.get("Beschreibung (IT)")) or "")
+        setattr(prop, "value_list_id", value_list_id)
+        setattr(prop, "raw_ifc_qto", _str(r.get("IfcPropertySet (Pset)\nIfcQuantitySet (Qto)")))
+        setattr(prop, "merkmalsgruppe", None)
+        props.append(prop)
+        if value_row and vals:
+            value_de_list = _split_values(_str(value_row.get("Werteliste\n(DE)")))
+            value_fr_list = _split_values(_str(value_row.get("Liste de valeurs\n(FR)")))
+            value_it_list = _split_values(_str(value_row.get("Lista valori\n(IT)")))
+            for idx, v in enumerate(vals, start=1):
+                val_code = slugify(v)
+                av = DDAllowedValue(
+                    property_code=code,
+                    code=val_code,
+                    value_de=value_de_list[idx - 1] if idx - 1 < len(value_de_list) else v,
+                    value_fr=value_fr_list[idx - 1] if idx - 1 < len(value_fr_list) else v,
+                    value_en=v,
+                    definition_de=_str(value_row.get("Bezeichnung")),
+                    owned_uri=_safe_uri(value_base, f"{code}/{val_code}"),
+                    sort_number=idx,
+                    status=_str(value_row.get("Status")) or "Preview",
+                )
+                setattr(av, "value_it", value_it_list[idx - 1] if idx - 1 < len(value_it_list) else v)
+                avs.append(av)
+    return props, avs
+
+
+def _parse_documents_abgeglichen(ws, meta: DictionaryMeta) -> list[dict]:
+    docs = []
+    header_row = None
+    for marker in ('DocumentName (EN)', 'DocumentName', 'DocumentationName', 'Bezeichnung (DE)'):
+        try:
+            header_row = _detect_header_row(ws, marker)
+            break
+        except ValueError:
+            continue
+    if header_row is None:
+        raise ValueError(f"Could not find document header row in sheet {ws.title}")
+    rows = _row_dicts(ws, header_row=header_row, data_start=header_row + 7)
+    for row_idx, r in enumerate(rows, start=header_row + 1):
+        document_uri = _str(r.get("URI"))
+        document_identification = _str(r.get("Document-ID")) or _str(r.get("Document-ID\nIdentification"))
+        document_code = _str(r.get("Document-Code")) or _str(r.get("Document-Code\nIdentification"))
+        document_name = _str(r.get("DocumentName (EN)")) or _str(r.get("DocumentName")) or _str(r.get("DocumentationName"))
+        security_level = _str(r.get("Sicherheitsstufe"))
+        accessibility = _str(r.get("Zugänglichkeit"))
+        revision = _str(r.get("Revision"))
+        owner = _str(r.get("\tDocumentOwner")) or _str(r.get("DocumentOwner"))
+        if not any([document_uri, document_identification, document_code, document_name, security_level, accessibility, revision, owner]):
+            continue
+        dokument_id = slugify(f"{document_identification or document_code or document_name or row_idx}")
+        item = {
+            "SourceCode": owner or "Organisation",
+            "Dokument-ID": dokument_id,
+            "DocumentCode": document_code,
+            "DocumentLabel": document_name,
+            "DocumentGroupCode": security_level,
+            "DocumentGroupName": accessibility,
+            "OwnedUri": _safe_uri(f"{_lindas_base(meta)}document/", dokument_id),
+            "Document Identification": document_identification,
+            "Dokument Name": document_name,
+            "DocumentationName": document_name,
+            "DocumentName": document_name,
+            "DocumentName (DE)": _str(r.get("Bezeichnung (DE)")) or _str(r.get("DocumentName (DE)")) or _str(r.get("DE")),
+            "DocumentationName (FR)": _str(r.get("Désignation (FR)")) or _str(r.get("DocumentName (FR)")) or _str(r.get("DocumentationName (FR)")) or _str(r.get("FR")),
+            "DocumentationName (IT)": _str(r.get("Designazione (IT)")) or _str(r.get("DocumentName (IT)")) or _str(r.get("DocumentationName (IT)")) or _str(r.get("IT")),
+            "Revision": revision,
+            "Owner": owner,
+            "Location": None,
+            "Dokument URI": document_uri,
+            "Sicherheitsstufe": security_level,
+            "Zugänglichkeit": accessibility,
+        }
+        docs.append(item)
+    return docs
+
+
+def _parse_merkmalsgruppen_abgeglichen(ws) -> set[str]:
+    groups = set()
+    for row_idx in range(8, ws.max_row + 1):
+        for col_idx in (4, 5, 6, 7):
+            value = _str(ws.cell(row_idx, col_idx).value)
+            if value:
+                groups.add(value)
+    return groups
+
+
+def _parse_matrix_abgeglichen(ws, properties: list[DDProperty], allowed_group_refs: set[str]) -> list[DDClassProperty]:
+    prop_ids = []
+    for col_idx in range(9, ws.max_column + 1):
+        prop_code = _str(ws.cell(3, col_idx).value)
+        if prop_code:
+            prop_ids.append((col_idx, prop_code))
+    cps = []
+    prop_index = {p.code: p for p in properties}
+    for row_idx in range(8, ws.max_row + 1):
+        class_code = _str(ws.cell(row_idx, 1).value)
+        if not class_code:
+            continue
+        property_group = _str(ws.cell(row_idx, 3).value)
+        for col_idx, prop_code in prop_ids:
+            raw = _str(ws.cell(row_idx, col_idx).value)
+            if not raw:
+                continue
+            marker = raw.strip()
+            lower = marker.lower()
+            override = None if lower == 'x' else marker
+            p = prop_index.get(prop_code)
+            cps.append(DDClassProperty(
+                class_code=class_code,
+                property_code=prop_code,
+                property_set_name=property_group if property_group in allowed_group_refs else (p.property_set_name if p else property_group),
+                is_required=True,
+                is_writable=True,
+                allowed_values_override=override,
+            ))
+    return cps
+
+
+def load_he_dd_abgeglichen(path: Path) -> DataDictionary:
+    path = Path(path)
+    wb = openpyxl.load_workbook(path, data_only=True)
+    meta = _default_meta(path)
+    meta.raw.update({
+        "DictionaryCode": slugify(path.stem).upper().replace('-', '_'),
+        "OrganizationCode": meta.org_code or "bdch",
+    })
+    classes = _parse_objects_abgeglichen(wb["Objekte"], meta)
+    properties, allowed_values = _parse_properties_abgeglichen(wb["Merkmale"], wb["Werte"], meta)
+    group_sheet = "Merkmalgruppen" if "Merkmalgruppen" in wb.sheetnames else None
+    group_refs = _parse_merkmalsgruppen_abgeglichen(wb[group_sheet]) if group_sheet else set()
+    class_properties = _parse_matrix_abgeglichen(wb["Data_Template"], properties, group_refs)
+    dd = DataDictionary(
+        source_file=path,
+        meta=meta,
+        classes=classes,
+        properties=properties,
+        class_properties=class_properties,
+        allowed_values=allowed_values,
+        concept_relations=[],
+    )
+    setattr(dd, "documents", _parse_documents_abgeglichen(wb["Dokumente"], meta))
     return dd
 
 
@@ -570,7 +798,10 @@ def load_he_dd_v01(path: Path) -> DataDictionary:
     path = Path(path)
     wb = openpyxl.load_workbook(path, data_only=True)
 
-    if {"Objekte", "Wertekatalog", "Data Template AreaMgmt", "Dokumente_Dokumentgruppen"}.issubset(set(wb.sheetnames)):
+    if {"Objekte", "Merkmale", "Werte", "Dokumente", "Data_Template", "Dictionary_core", "Dictionary_public"}.issubset(set(wb.sheetnames)) and {"Merkmalgruppen"}.issubset(set(wb.sheetnames)):
+        return load_he_dd_abgeglichen(path)
+
+    if {"Objekte", "Werte", "Data Template AreaMgmt", "Dokumente_Dokumentgruppen"}.issubset(set(wb.sheetnames)):
         return load_he_dd_v20260619(path)
 
     meta = _parse_dictionary_if_present(wb, path)

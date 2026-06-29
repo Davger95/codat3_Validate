@@ -1,21 +1,25 @@
-# GitHub Actions wrapper for Data Dictionary validation
+# GitHub validation wrapper — baseline MVP
 
-This folder contains a portable GitHub Actions setup for validating Excel-based data dictionaries.
+## Canonical command
 
-## Main workflow
-- `.github/workflows/validate-data-dictionary.yml`
+```bash
+python3 scripts/schemaforge/run_github_validation.py \
+  --workspace /home/Dave/.openclaw/workspace-datadict \
+  --workbook-path templates/Strukturvorlage\ Datenkataloge_Abgeglichen_v2__empty.xlsx
+```
 
-## Expected companion scripts
-- `scripts/schemaforge/validate_strukturvorlage.py`
-- `scripts/schemaforge/run_github_validation.py`
+## Baseline expectation
 
-## Outputs
-The workflow writes and uploads:
-- `SchemaForge_output/github_validation_report.json`
-- `SchemaForge_output/github_validation_report.md`
-- `SchemaForge_output/github_validation_summary.json`
+For the current baseline MVP, the canonical empty aligned template should validate with:
 
-## Behavior
-- auto-detects the newest active workbook if no workbook path is provided
-- generates both machine-readable and layman-readable reports
-- fails the job only when blocking validation errors exist
+- `parser_valid: true`
+- `pipeline_valid: true`
+- `governance_valid: true`
+- `errors: 0`
+- `warnings: 0`
+
+## Scope note
+
+This baseline verifies the aligned template/validator lane only.
+
+Authored workbook validation and export/publish verification are not claimed in this baseline unless separately tested and documented.

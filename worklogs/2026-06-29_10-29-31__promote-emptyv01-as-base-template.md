@@ -1,0 +1,46 @@
+# Worklog Template
+
+- Timestamp: 2026-06-29T10:29:31Z
+- Objective: Promote `Strukturvorlage Datenkataloge_Abgeglichen_v2__emptyv0.1.xlsx` as the active base template, align the validator/reader to its `Data_Template` structure, and continue the pipeline from this version forward.
+- Actions performed: 
+  - Promoted `/home/Dave/.openclaw/workspace-datadict/templates/Strukturvorlage Datenkataloge_Abgeglichen_v2__emptyv0.1.xlsx` to the active base template path `/home/Dave/.openclaw/workspace-datadict/templates/Strukturvorlage Datenkataloge_Abgeglichen_v2__empty.xlsx`.
+  - Created a backup of the previous base template at `/home/Dave/.openclaw/workspace-datadict/templates/Strukturvorlage Datenkataloge_Abgeglichen_v2__empty__superseded-pre-v0.1.xlsx`.
+  - Patched `scripts/schemaforge/validate_strukturvorlage.py` so the active aligned `Data_Template` interpretation follows the new label-based row model.
+  - Patched `scripts/schemaforge/readers/he_dd_v01_reader.py` so the aligned reader follows the same `Data_Template` row model.
+  - Recompiled the active validator/reader stack.
+  - Reran the full validation pipeline against the promoted base template.
+  - Swept the codebase for stale legacy names and confirmed the remaining occurrences are still present only in legacy compatibility paths, not in the active aligned validation path that now validates the promoted workbook.
+- Results: 
+  - The promoted base template validates cleanly end-to-end.
+  - Current validation result for the active promoted base template:
+    - `parser_valid: true`
+    - `pipeline_valid: true`
+    - `governance_valid: true`
+    - `errors: 0`
+    - `warnings: 0`
+    - `normalizations: 0`
+- Files created/modified: 
+  - /home/Dave/.openclaw/workspace-datadict/templates/Strukturvorlage Datenkataloge_Abgeglichen_v2__empty.xlsx — active promoted base template
+  - /home/Dave/.openclaw/workspace-datadict/templates/Strukturvorlage Datenkataloge_Abgeglichen_v2__empty__superseded-pre-v0.1.xlsx — backup of previous base template
+  - /home/Dave/.openclaw/workspace-datadict/scripts/schemaforge/validate_strukturvorlage.py — aligned `Data_Template` validation assumptions updated
+  - /home/Dave/.openclaw/workspace-datadict/scripts/schemaforge/readers/he_dd_v01_reader.py — aligned `Data_Template` reader assumptions updated
+  - /home/Dave/.openclaw/workspace-datadict/SchemaForge_output/github_validation_report.json — clean validation report
+  - /home/Dave/.openclaw/workspace-datadict/SchemaForge_output/github_validation_report.md — clean validation report
+  - /home/Dave/.openclaw/workspace-datadict/SchemaForge_output/github_validation_summary.json — clean validation summary
+  - /home/Dave/.openclaw/workspace-datadict/worklogs/2026-06-29_10-29-31__promote-emptyv01-as-base-template.md — immutable worklog entry
+- Commands run: 
+  - `python3` file promotion/copy script
+  - `python3` patch scripts for `validate_strukturvorlage.py` and `he_dd_v01_reader.py`
+  - `python3 -m py_compile scripts/schemaforge/validate_strukturvorlage.py scripts/schemaforge/readers/he_dd_v01_reader.py scripts/schemaforge/readers/excel_reader.py scripts/schemaforge/i14y/metadata_reader.py`
+  - `python3 scripts/schemaforge/run_github_validation.py --workspace /home/Dave/.openclaw/workspace-datadict --workbook-path /home/Dave/.openclaw/workspace-datadict/templates/Strukturvorlage\ Datenkataloge_Abgeglichen_v2__empty.xlsx`
+  - `grep -RIn ... scripts/schemaforge`
+  - `date -u +"%Y-%m-%d_%H-%M-%S|%Y-%m-%dT%H:%M:%SZ"`
+- Verification result: 
+  - Verified parser, pipeline, and governance checks all pass on the promoted base template.
+  - Verified validation report generation succeeds with zero findings.
+  - Verified this new worklog file was created with a unique timestamped filename.
+- Remaining risks or next actions: 
+  - Legacy compatibility code paths still exist in the repository for older workbook formats; these are now contained and not blocking the active aligned base template path.
+  - If desired, next step is to continue refining the remaining tabs and then prepare the GitHub Actions rollout using this promoted template/validator baseline.
+- Next step: Continue tab/pipeline refinement from the promoted base template and prepare the new GitHub validation rollout.
+- Author: datadict

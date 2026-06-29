@@ -148,9 +148,9 @@ def read_metadata(excel_path: str | Path) -> DictionaryMetadata:
     excel_path = Path(excel_path).resolve()
     wb = openpyxl.load_workbook(str(excel_path), read_only=True, data_only=True)
 
-    if "Dictionary core" in wb.sheetnames:
-        core_sheet = "Dictionary core"
-        public_sheet = "Dictionary public" if "Dictionary public" in wb.sheetnames else None
+    if "Dictionary_core" in wb.sheetnames:
+        core_sheet = "Dictionary_core"
+        public_sheet = "Dictionary_public" if "Dictionary_public" in wb.sheetnames else None
     elif "Dictionary" in wb.sheetnames:
         core_sheet = "Dictionary"
         public_sheet = None

@@ -1,0 +1,37 @@
+# Worklog Template
+
+- Timestamp: 2026-06-29T11:03:42Z
+- Objective: Perform the final baseline cleanup pass on the canonical empty template, tighten the GitHub workflow fail logic, rerun baseline validation, and verify workbook-internal legacy strings.
+- Actions performed: 
+  - Tightened `.github/workflows/validate-data-dictionary.yml` so push/pull_request also react to `scripts/schemaforge/readers/**/*.py` changes.
+  - Tightened the workflow fail step so it now fails when any of `parser_valid`, `pipeline_valid`, or `governance_valid` is not true, or when `errors > 0`.
+  - Rebuilt the canonical empty template from the clean `emptyv0.1` source and reapplied the aligned workbook string cleanup.
+  - Cleared targeted stale residue references in workbook XML for `Merkmale!D36:D58`, `Merkmale!Q36:Q58`, and `Dokumente!D12:D14`.
+  - Patched workbook shared strings to remove remaining user-visible legacy sheet naming in the public text surface.
+  - Reran the canonical validation command successfully.
+  - Re-ran workbook-internal scans for legacy strings and data-area residue.
+- Results: 
+  - The canonical empty template validates cleanly again with zero errors, warnings, and normalizations.
+  - The GitHub workflow fail logic is now aligned with the requested baseline quality gate.
+  - Workbook-internal legacy string scan was performed and the known public-facing hits were fixed.
+- Files created/modified: 
+  - /home/Dave/.openclaw/workspace-datadict/templates/Strukturvorlage Datenkataloge_Abgeglichen_v2__empty.xlsx — canonical empty template cleaned
+  - /home/Dave/.openclaw/workspace-datadict/.github/workflows/validate-data-dictionary.yml — trigger paths and fail logic tightened
+  - /home/Dave/.openclaw/workspace-datadict/SchemaForge_output/github_validation_report.json — refreshed clean validation output
+  - /home/Dave/.openclaw/workspace-datadict/SchemaForge_output/github_validation_report.md — refreshed clean validation output
+  - /home/Dave/.openclaw/workspace-datadict/SchemaForge_output/github_validation_summary.json — refreshed clean validation output
+  - /home/Dave/.openclaw/workspace-datadict/worklogs/2026-06-29_11-03-42__final-baseline-cleanup-pass.md — immutable worklog entry
+- Commands run: 
+  - `python3` workbook cleanup / rebuild scripts
+  - `python3` workbook XML/shared-string patch scripts
+  - `python3 scripts/schemaforge/run_github_validation.py --workspace /home/Dave/.openclaw/workspace-datadict --workbook-path "templates/Strukturvorlage Datenkataloge_Abgeglichen_v2__empty.xlsx"`
+  - workbook residue scans and workbook-internal legacy string scans
+  - `date -u +"%Y-%m-%d_%H-%M-%S|%Y-%m-%dT%H:%M:%SZ"`
+- Verification result: 
+  - Verified canonical baseline validation result is clean.
+  - Verified the workflow now fails on parser/pipeline/governance/error conditions, not pipeline only.
+  - Verified this new worklog file was created with a unique timestamped filename.
+- Remaining risks or next actions: 
+  - OpenPyXL still warns that Data Validation extensions are not fully preserved when loading the workbook; however, the current baseline validation run succeeds and the canonical MVP lane remains clean.
+- Next step: Upload authored workbook with 1–2 rows and run validation.
+- Author: datadict

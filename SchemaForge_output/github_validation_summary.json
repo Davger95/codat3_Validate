@@ -1,0 +1,9 @@
+{
+  "workbook": "/home/Dave/.openclaw/workspace-datadict/templates/Strukturvorlage Datenkataloge_Abgeglichen_v2__empty.xlsx",
+  "parser_valid": true,
+  "pipeline_valid": true,
+  "governance_valid": true,
+  "errors": 0,
+  "warnings": 0,
+  "normalizations": 0
+}

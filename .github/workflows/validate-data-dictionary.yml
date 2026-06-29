@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       workbook_path:
-        description: 'Optional relative path to the workbook (.xlsx). If empty, the workflow auto-detects the newest Strukturvorlage/Test workbook.'
+        description: 'Optional relative path to the workbook (.xlsx). Defaults to the canonical aligned empty template.'
         required: false
-        default: ''
+        default: 'templates/Strukturvorlage Datenkataloge_Abgeglichen_v2__empty.xlsx'
       fail_on_validation_errors:
         description: 'Fail the workflow when blocking validation errors exist. Set to false for example/test workbooks when you only want reports.'
         required: false
@@ -17,12 +17,14 @@ on:
       - '.github/workflows/validate-data-dictionary.yml'
       - 'scripts/schemaforge/validate_strukturvorlage.py'
       - 'scripts/schemaforge/run_github_validation.py'
+      - 'scripts/schemaforge/readers/**/*.py'
   pull_request:
     paths:
       - '**/*.xlsx'
       - '.github/workflows/validate-data-dictionary.yml'
       - 'scripts/schemaforge/validate_strukturvorlage.py'
       - 'scripts/schemaforge/run_github_validation.py'
+      - 'scripts/schemaforge/readers/**/*.py'
 
 jobs:
   validate-dd:
@@ -51,7 +53,7 @@ jobs:
         run: |
           python scripts/schemaforge/run_github_validation.py \
             --workspace . \
-            --workbook-path "${{ github.event.inputs.workbook_path }}"
+            --workbook-path "${{ github.event.inputs.workbook_path || 'templates/Strukturvorlage Datenkataloge_Abgeglichen_v2__empty.xlsx' }}"
 
       - name: Upload validation artifacts
         uses: actions/upload-artifact@v4
@@ -75,5 +77,11 @@ jobs:
           from pathlib import Path
           summary = json.loads(Path('SchemaForge_output/github_validation_summary.json').read_text())
           print(summary)
-          raise SystemExit(0 if summary.get('pipeline_valid') else 1)
+          ok = (
+              summary.get('parser_valid') is True and
+              summary.get('pipeline_valid') is True and
+              summary.get('governance_valid') is True and
+              int(summary.get('errors', 0)) == 0
+          )
+          raise SystemExit(0 if ok else 1)
           PY
