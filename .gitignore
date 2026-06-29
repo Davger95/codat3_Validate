@@ -1,0 +1,6 @@
+SchemaForge_output/*
+!SchemaForge_output/github_validation_report.json
+!SchemaForge_output/github_validation_report.md
+!SchemaForge_output/github_validation_summary.json
+__pycache__/
+*.pyc
