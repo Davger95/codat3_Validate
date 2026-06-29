@@ -534,11 +534,11 @@ def _parse_objects_abgeglichen(ws, meta: DictionaryMeta) -> list[DDClass]:
         cls = DDClass(
             code=code,
             class_type="Class",
-            name_de=_str(r.get("Bezeichnung")) or "",
+            name_de=_str(r.get("Bezeichnung (DE)")) or _str(r.get("Bezeichnung")) or "",
             name_fr=_str(r.get("Désignation (FR)")) or _str(r.get("FR")) or "",
-            name_en=_str(r.get("Designation")) or _str(r.get("Bezeichnung")) or "",
-            definition_de=_str(r.get("Beschreibung")) or "",
-            definition_fr=_str(r.get("Beschreibung (FR)")) or "",
+            name_en=_str(r.get("Designation (EN)")) or _str(r.get("Designation")) or _str(r.get("Bezeichnung (DE)")) or "",
+            definition_de=_str(r.get("Beschreibung (DE)")) or _str(r.get("Beschreibung")) or "",
+            definition_fr=_str(r.get("Description (FR)")) or _str(r.get("Beschreibung (FR)")) or "",
             owned_uri=_str(r.get("GUID/URI")) or _safe_uri(base, code),
             parent_class_code=_str(r.get("Objekt-Einordnung ")) or _str(r.get("Objekt-Einordnung")),
             ifc_entity_code=_normalize_ifc_entity(_str(r.get("IfcObject Entity")), _str(r.get("PredefinedType"))),
@@ -551,7 +551,7 @@ def _parse_objects_abgeglichen(ws, meta: DictionaryMeta) -> list[DDClass]:
             countries_of_use="CH",
         )
         setattr(cls, "name_it", _str(r.get("Designazione (IT)")) or _str(r.get("IT")) or "")
-        setattr(cls, "definition_it", _str(r.get("Beschreibung (IT)")) or "")
+        setattr(cls, "definition_it", _str(r.get("Descrizione (IT)")) or _str(r.get("Beschreibung (IT)")) or "")
         setattr(cls, "ifc_type_object_entity_code", _str(r.get("IfcTypeObject Entity")))
         setattr(cls, "object_type", _str(r.get("ObjectType")))
         setattr(cls, "status", _str(r.get("Status")) or "Preview")
@@ -585,11 +585,11 @@ def _parse_properties_abgeglichen(ws, value_ws, meta: DictionaryMeta) -> tuple[l
         vals = _split_values(enum_values_raw)
         prop = DDProperty(
             code=code,
-            name_de=_str(r.get("Merkmal")) or "",
-            name_fr=_str(r.get("FR")) or _str(r.get("Désignation (FR)")) or "",
-            name_en=_str(r.get("Property")) or _str(r.get("Merkmal")) or "",
-            definition_de=_str(r.get("Beschreibung")) or "",
-            definition_fr=_str(r.get("Beschreibung (FR)")) or "",
+            name_de=_str(r.get("Bezeichnung (DE)")) or _str(r.get("Merkmal")) or "",
+            name_fr=_str(r.get("Description (FR)")) or _str(r.get("FR")) or _str(r.get("Désignation (FR)")) or "",
+            name_en=_str(r.get("Designation (EN)")) or _str(r.get("Property")) or _str(r.get("Bezeichnung (DE)")) or _str(r.get("Merkmal")) or "",
+            definition_de=_str(r.get("Beschreibung (DE)")) or _str(r.get("Beschreibung")) or "",
+            definition_fr=_str(r.get("Description (FR)")) or _str(r.get("Beschreibung (FR)")) or "",
             owned_uri=_str(r.get("GUID/URI")) or _safe_uri(prop_base, code),
             data_type=_str(r.get("DataType\n(Base Type)")) or "STRING",
             data_type_ifc=_str(r.get("DataType\n(IFC)")),
@@ -602,8 +602,8 @@ def _parse_properties_abgeglichen(ws, value_ws, meta: DictionaryMeta) -> tuple[l
             rds_reference=None,
             status=_str(r.get("Status")) or "Preview",
         )
-        setattr(prop, "name_it", _str(r.get("IT")) or _str(r.get("Designazione (IT)")) or "")
-        setattr(prop, "definition_it", _str(r.get("Beschreibung (IT)")) or "")
+        setattr(prop, "name_it", _str(r.get("Descrizione (IT)")) or _str(r.get("IT")) or _str(r.get("Designazione (IT)")) or "")
+        setattr(prop, "definition_it", _str(r.get("Descrizione (IT)")) or _str(r.get("Beschreibung (IT)")) or "")
         setattr(prop, "value_list_id", value_list_id)
         setattr(prop, "raw_ifc_qto", _str(r.get("IfcPropertySet (Pset)\nIfcQuantitySet (Qto)")))
         setattr(prop, "merkmalsgruppe", None)

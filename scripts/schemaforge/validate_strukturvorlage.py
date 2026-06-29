@@ -565,7 +565,7 @@ class Validator:
         if not group_sheet:
             return
         ws = self.wb[group_sheet]
-        headers = self._header_index_map(ws, 2)
+        headers = self._header_index_map(ws, 1)
         core_sheet, _ = self._dictionary_sheet_names()
         org_code = None
         if core_sheet:
@@ -579,9 +579,9 @@ class Validator:
             group_code = self._cell(row, headers.get('Merkmalsgruppe-Code', 5))
             group_en = self._cell(row, headers.get('Designation (EN)', headers.get('Merkmalsgruppe (EN)', 6)))
             desc_en = self._cell(row, headers.get('Description (EN)', 7))
-            label_de = self._cell(row, headers.get('Bezeichnung (DE)', headers.get('Beschreibung (DE)', 8)))
-            label_fr = self._cell(row, headers.get('Désignation (FR)', headers.get('Description (FR)', 9)))
-            label_it = self._cell(row, headers.get('Designazione (IT)', headers.get('Descrizione (IT)', 10)))
+            label_de = self._cell(row, headers.get('Beschreibung (DE)', headers.get('Bezeichnung (DE)', 8)))
+            label_fr = self._cell(row, headers.get('Description (FR)', headers.get('Désignation (FR)', 9)))
+            label_it = self._cell(row, headers.get('Descrizione (IT)', headers.get('Designazione (IT)', 10)))
             desc_de = label_de
             desc_fr = label_fr
             desc_it = label_it
@@ -591,12 +591,8 @@ class Validator:
             if not any([group_id, group_code, group_en, desc_en, desc_de, desc_fr, desc_it, status, version_date]):
                 continue
 
-            if not group_id:
-                self.add('error', 'missing_group_id', 'Merkmalgruppen row missing Merkmalsgruppe-ID.', sheet=group_sheet, row=idx)
-            elif group_id in seen_ids:
+            if group_id and group_id in seen_ids:
                 self.add('error', 'duplicate_group_id', f'Duplicate Merkmalsgruppe-ID: {group_id}', sheet=group_sheet, row=idx)
-            else:
-                seen_ids.add(group_id)
 
             if group_code:
                 if group_code in seen_codes:
@@ -614,11 +610,16 @@ class Validator:
                     self.add('error', 'group_label_too_long', f'Designation (EN) name part after prefix must be max 16 characters, got {len(suffix)}.', sheet=group_sheet, row=idx)
                 expected_id = self.slugify(group_en)
                 if not group_id and expected_id:
-                    self.add('warning', 'missing_group_id', f'Merkmalsgruppe-ID is system-generated and should not be authored manually. Generated value: {expected_id}', sheet=group_sheet, row=idx)
                     self.add_normalization(group_sheet, idx, 'Merkmalsgruppe-ID', group_id, expected_id, 'System-generated ID derived from Designation (EN)', 'derived-group-id', True)
+                    group_id = expected_id
                 elif group_id and expected_id and group_id != expected_id:
                     self.add('warning', 'system_generated_group_id_override', f'Merkmalsgruppe-ID is a system-generated field. Manual value {group_id} will be overwritten by generated value {expected_id}.', sheet=group_sheet, row=idx)
                     self.add_normalization(group_sheet, idx, 'Merkmalsgruppe-ID', group_id, expected_id, 'Manual ID overridden by system-generated ID derived from Designation (EN)', 'derived-group-id', True)
+                    group_id = expected_id
+                if group_id in seen_ids:
+                    self.add('error', 'duplicate_group_id', f'Duplicate Merkmalsgruppe-ID: {group_id}', sheet=group_sheet, row=idx)
+                else:
+                    seen_ids.add(group_id)
 
             for lang, value in [('EN', group_en), ('DE', label_de), ('FR', label_fr), ('IT', label_it)]:
                 norm = self._norm(value)
@@ -627,7 +628,7 @@ class Validator:
             if not desc_en:
                 self.add('error', 'missing_group_description_en', 'Description (EN) is required.', sheet=group_sheet, row=idx)
             if not any([desc_de, desc_fr, desc_it]):
-                self.add('error', 'missing_group_description_local', 'At least one local-language designation/description must be filled in DE/FR/IT.', sheet=group_sheet, row=idx)
+                self.add('error', 'missing_group_description_local', 'At least one local-language description must be filled in DE/FR/IT.', sheet=group_sheet, row=idx)
 
             if status and status not in ALLOWED_LIFECYCLE:
                 self.add('error', 'invalid_group_status', f'Merkmalgruppen.Status must be one of the allowed lifecycle values, got: {status}', sheet=group_sheet, row=idx)
@@ -647,7 +648,7 @@ class Validator:
         if sheet_name not in self.wb.sheetnames:
             return
         ws = self.wb[sheet_name]
-        headers = self._header_index_map(ws, 3 if self.is_abgeglichen_template() else 3)
+        headers = self._header_index_map(ws, 1 if self.is_abgeglichen_template() else 3)
         seen_codes = set()
         seen_labels = {}
         dd = self.get_dd()
@@ -676,10 +677,10 @@ class Validator:
                 if self.is_abgeglichen_template():
                     obj_id = self._cell(row, headers.get('Objekt-ID', 9))
                     obj_einordnung = self._cell(row, headers.get('Objekt-Einordnung ', headers.get('Objekt-Einordnung', 10)))
-                    bezeichnung = self._cell(row, headers.get('Bezeichnung', 11))
+                    bezeichnung = self._cell(row, headers.get('Bezeichnung (DE)', headers.get('Bezeichnung', 11)))
                     designation = self._cell(row, headers.get('Designation (EN)', headers.get('Designation', 12)))
-                    beschreibung = self._cell(row, headers.get('Beschreibung', 15))
-                    description = self._cell(row, headers.get('Description', 16))
+                    beschreibung = self._cell(row, headers.get('Beschreibung (DE)', headers.get('Beschreibung', 15)))
+                    description = self._cell(row, headers.get('Description (EN)', headers.get('Description', 16)))
                     ifc_uri = self._cell(row, headers.get('Objekte.IFC_URI', headers.get('IFC_URI', headers.get('GUID/URI_1', 20))))
                     ifc_obj = self._cell(row, headers.get('IfcObject Entity', 21))
                     ifc_type = self._cell(row, headers.get('IfcTypeObject Entity', 22))
@@ -792,7 +793,7 @@ class Validator:
         if sheet_name not in self.wb.sheetnames:
             return
         ws = self.wb[sheet_name]
-        headers = self._header_index_map(ws, 2 if self.is_abgeglichen_template() else 3)
+        headers = self._header_index_map(ws, 1 if self.is_abgeglichen_template() else 3)
         ifc_uri_set = self.get_ifc_uri_set()
         seen_codes = set()
         seen_labels = {}
@@ -864,17 +865,16 @@ class Validator:
             if self.is_abgeglichen_template():
                 if not prop_id:
                     if expected_prop_id:
-                        self.add('warning', 'missing_property_code', f'Merkmal-ID is system-generated and should not be authored manually. Generated value: {expected_prop_id}', sheet=sheet_name, row=idx)
                         self.add_normalization(sheet_name, idx, 'Merkmal-ID', prop_id, expected_prop_id, 'System-generated ID derived from Property (EN)', 'derived-property-id', True)
                         prop_code = expected_prop_id
                     else:
-                        self.add('error', 'missing_property_code', 'Property row missing Merkmal-ID and no usable Property (EN) is available for generation.', sheet=sheet_name, row=idx)
+                        self.add('error', 'missing_property_id_generation_source', 'Property row is missing Merkmal-ID and no usable Property (EN) is available for system generation.', sheet=sheet_name, row=idx)
                 elif expected_prop_id and prop_id != expected_prop_id:
                     self.add('warning', 'system_generated_property_id_override', f'Merkmal-ID is a system-generated field. Manual value {prop_id} will be overwritten by generated value {expected_prop_id}.', sheet=sheet_name, row=idx)
                     self.add_normalization(sheet_name, idx, 'Merkmal-ID', prop_id, expected_prop_id, 'Manual ID overridden by system-generated ID derived from Property (EN)', 'derived-property-id', True)
                     prop_code = expected_prop_id
             if not prop_code:
-                self.add('error', 'missing_property_code', 'Property row missing Merkmal-ID', sheet=sheet_name, row=idx)
+                self.add('error', 'missing_property_id_generation_source', 'Property row is missing Merkmal-ID and no usable Property (EN) is available for system generation.', sheet=sheet_name, row=idx)
             elif prop_code in seen_codes:
                 self.add('error', 'duplicate_property_code', f'Duplicate Merkmal-ID: {prop_code}', sheet=sheet_name, row=idx)
             else:
@@ -897,10 +897,10 @@ class Validator:
                 self.add('error', 'missing_ifc_data_type', 'Property row missing DataType (IFC)', sheet=sheet_name, row=idx)
             unit_code = self._cell(row, headers.get('Einheit-Code', 21)) if self.is_abgeglichen_template() else None
             unit_qudt = self._cell(row, headers.get('QUDT URI', 22)) if self.is_abgeglichen_template() else None
-            unit_name_de = self._cell(row, headers.get('Einheit-Name (DE)', 23)) if self.is_abgeglichen_template() else None
-            unit_name_fr = self._cell(row, headers.get('Einheit-Name (FR)', 24)) if self.is_abgeglichen_template() else None
-            unit_name_it = self._cell(row, headers.get('Einheit-Name (IT)', 25)) if self.is_abgeglichen_template() else None
-            unit_name_en = self._cell(row, headers.get('Einheit-Name (EN)', 26)) if self.is_abgeglichen_template() else None
+            unit_name_de = self._cell(row, headers.get('Einheit-Name (DE)', 24)) if self.is_abgeglichen_template() else None
+            unit_name_fr = self._cell(row, headers.get('Nom de l’unité (FR)', headers.get('Einheit-Name (FR)', 25))) if self.is_abgeglichen_template() else None
+            unit_name_it = self._cell(row, headers.get('Nome unità (IT)', headers.get('Einheit-Name (IT)', 26))) if self.is_abgeglichen_template() else None
+            unit_name_en = self._cell(row, headers.get('Unit Name (EN)', headers.get('Einheit-Name (EN)', 23))) if self.is_abgeglichen_template() else None
             if value_list_id and self.is_v20260619_template() and value_ids:
                 if value_list_id not in value_ids:
                     self.add('error', 'unknown_value_list_id', f'Werteliste-ID {value_list_id} is not registered in Werte.', sheet=sheet_name, row=idx)
@@ -938,9 +938,7 @@ class Validator:
                     self.add('error', 'invalid_property_status', f'Merkmale.Status must be one of the allowed lifecycle values, got: {status}', sheet=sheet_name, row=idx)
                 if version_date and not re.match(r'^\d{4}-\d{2}-\d{2}$', version_date):
                     self.add('error', 'invalid_property_version_date', f'Merkmale.Versionsdatum should be YYYY-MM-DD, got: {version_date}', sheet=sheet_name, row=idx)
-            if not unit_qudt:
-                self.add('error', 'missing_qudt_unit_uri', 'QUDT URI must be filled for Merkmale rows.', sheet=sheet_name, row=idx)
-            else:
+            if unit_qudt:
                 if not self.is_absolute_uri(unit_qudt):
                     self.add('error', 'invalid_qudt_unit_uri', f'QUDT URI is not a valid absolute IRI: {unit_qudt}', sheet=sheet_name, row=idx)
                 elif not unit_qudt.startswith('http://qudt.org/vocab/unit/') and not unit_qudt.startswith('https://qudt.org/vocab/unit/'):
