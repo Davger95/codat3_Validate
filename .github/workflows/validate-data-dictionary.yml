@@ -6,7 +6,7 @@ on:
       workbook_path:
         description: 'Optional relative path to the workbook (.xlsx). Defaults to the canonical aligned empty template.'
         required: false
-        default: 'templates/Strukturvorlage Datenkataloge_Abgeglichen_v2__empty.xlsx'
+        default: 'templates/Strukturvorlage_DataDictionary_empty.xlsx'
       fail_on_validation_errors:
         description: 'Fail the workflow when parser, governance, pipeline, or validation errors occur.'
         required: false
@@ -53,7 +53,7 @@ jobs:
         run: |
           python scripts/schemaforge/run_github_validation.py \
             --workspace . \
-            --workbook-path "${{ github.event.inputs.workbook_path || 'templates/Strukturvorlage Datenkataloge_Abgeglichen_v2__empty.xlsx' }}"
+            --workbook-path "${{ github.event.inputs.workbook_path || 'templates/Strukturvorlage_DataDictionary_empty.xlsx' }}"
 
       - name: Upload validation artifacts
         uses: actions/upload-artifact@v4
