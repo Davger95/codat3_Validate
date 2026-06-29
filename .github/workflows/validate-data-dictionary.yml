@@ -8,9 +8,9 @@ on:
         required: false
         default: 'templates/Strukturvorlage Datenkataloge_Abgeglichen_v2__empty.xlsx'
       fail_on_validation_errors:
-        description: 'Fail the workflow when blocking validation errors exist. Set to false for example/test workbooks when you only want reports.'
+        description: 'Fail the workflow when parser, governance, pipeline, or validation errors occur.'
         required: false
-        default: 'false'
+        default: 'true'
   push:
     paths:
       - '**/*.xlsx'
