@@ -207,6 +207,8 @@ class Validator:
         normalized_predefined = self._normalize_predefined_type(predefined)
         if not normalized_predefined:
             return
+        if str(predefined).strip() == 'USERDEFINED':
+            return
         ifc_uri_set = self.get_ifc_uri_set()
         if not ifc_obj:
             self.add('warning', 'predefined_type_without_ifc_entity', f'PredefinedType is filled but IfcObject Entity is missing, so authoritative validation cannot be completed: {predefined}', sheet=sheet_name, row=row_idx)
@@ -217,7 +219,7 @@ class Validator:
             self.add('error', 'invalid_predefined_type', f'PredefinedType {predefined} is not a valid authoritative IFC predefined type for {base_ifc_obj}', sheet=sheet_name, row=row_idx)
             return
         derived_ifc_class = self._extract_ifc_class_from_uri(ifc_uri)
-        if derived_ifc_class and derived_ifc_class != base_ifc_obj:
+        if derived_ifc_class and not str(derived_ifc_class).startswith(str(base_ifc_obj)):
             self.add('error', 'ifc_uri_entity_mismatch', f'IFC URI implies base IFC class {derived_ifc_class}, but IfcObject Entity is {ifc_obj}', sheet=sheet_name, row=row_idx)
             return
         if ifc_uri and ifc_uri != candidate_uri:
@@ -368,7 +370,7 @@ class Validator:
                 if key == 'DictionaryName (EN)':
                     self.add('error', 'missing_dictionary_field', 'Erforderlicher Header-Wert fehlt: DictionaryName (EN). Füllen Sie zusätzlich mindestens einen lokalen DictionaryName in DE, FR oder IT aus.', sheet=core_sheet, row=value_row[1] if value_row else None)
                 elif key == 'OrganizationCode':
-                    self.add('error', 'missing_dictionary_field', 'Erforderlicher Header-Wert fehlt: OrganizationCode. Verwenden Sie einen kurzen Code in Kleinbuchstaben mit maximal 6 Zeichen.', sheet=core_sheet, row=value_row[1] if value_row else None)
+                    self.add('error', 'missing_dictionary_field', 'Erforderlicher Header-Wert fehlt: OrganizationCode. Verwenden Sie einen kurzen Code mit maximal 6 Zeichen.', sheet=core_sheet, row=value_row[1] if value_row else None)
                 elif key == 'DictionaryVersion':
                     self.add('error', 'missing_dictionary_field', 'Erforderlicher Header-Wert fehlt: DictionaryVersion. Verwenden Sie Semantic Versioning wie 1.0.0.', sheet=core_sheet, row=value_row[1] if value_row else None)
                 elif key == 'LifecycleStatus':
@@ -377,8 +379,8 @@ class Validator:
                     self.add('error', 'missing_dictionary_field', f'Erforderlicher Header-Wert fehlt: {key}', sheet=core_sheet, row=value_row[1] if value_row else None)
 
         org_code, org_row = core_rows.get('OrganizationCode', (None, None))
-        if org_code and not re.match(r'^[a-z0-9-]{1,6}$', org_code):
-            self.add('error', 'invalid_organization_code', 'OrganizationCode must be lowercase, max 6 characters, and contain no special characters except hyphen.', sheet=core_sheet, row=org_row)
+        if org_code and not re.match(r'^[A-Za-z0-9-]{1,6}$', org_code):
+            self.add('error', 'invalid_organization_code', 'OrganizationCode must be max 6 characters and contain no special characters except hyphen.', sheet=core_sheet, row=org_row)
 
         name_en, name_en_row = core_rows.get('DictionaryName (EN)', (None, None))
         name_de, _ = core_rows.get('DictionaryName (DE)', (None, None))
@@ -538,11 +540,13 @@ class Validator:
             value_sheet_name = 'Werte'
         else:
             return
-        headers = self._header_index_map(ws, 3)
+        header_row = 1 if 'Values' in self.wb.sheetnames else 3
+        data_start = 8 if 'Values' in self.wb.sheetnames else 10
+        headers = self._header_index_map(ws, header_row)
         seen_ids = set()
-        for idx, row in self._iter_data_rows(ws, 10):
+        for idx, row in self._iter_data_rows(ws, data_start):
             katalog_id = self._cell(row, headers.get('Enumeration-ID', headers.get('Werteliste-ID', headers.get('Werte-ID', 5))))
-            label_de = self._cell(row, headers.get('Bezeichnung', 6))
+            label_de = self._cell(row, headers.get('Bezeichnung (DE)', headers.get('Bezeichnung', 6)))
             label_fr = self._cell(row, headers.get('Désignation (FR)', 7))
             label_it = self._cell(row, headers.get('Designazione (IT)', 8))
             label_en = self._cell(row, headers.get('Designation (EN)', headers.get('Label (EN)', 9)))
@@ -550,41 +554,42 @@ class Validator:
             values_de_raw = self._cell(row, headers.get('Werteliste\n(DE)', 11))
             values_fr_raw = self._cell(row, headers.get('Liste de valeurs\n(FR)', 12))
             values_it_raw = self._cell(row, headers.get('Lista valori\n(IT)', 13))
-            unit = self._cell(row, headers.get('Units/Einheit/Unité/Unità', headers.get('Einheiten', 14)))
-            status = self._cell(row, headers.get('Status', 16))
-            version_date = self._cell(row, headers.get('Version date', headers.get('Versionsdatum', 17)))
+            unit = self._cell(row, headers.get('Units/Einheit/Unité/Unità', headers.get('Einheiten', 15 if 'Values' in self.wb.sheetnames else 14)))
+            status = self._cell(row, headers.get('Status', 17 if 'Values' in self.wb.sheetnames else 16))
+            version_date = self._cell(row, headers.get('Version date', headers.get('Versionsdatum', 18 if 'Values' in self.wb.sheetnames else 17)))
 
             if not any([katalog_id, label_de, label_fr, label_it, label_en, values_en_raw, values_de_raw, values_fr_raw, values_it_raw, unit, status, version_date]):
                 continue
 
             if not katalog_id:
-                self.add('error', 'missing_value_catalog_id', 'Werte row missing Werteliste-ID.', sheet='Werte', row=idx)
+                self.add('error', 'missing_value_catalog_id', 'Values row missing Enumeration-ID.', sheet=value_sheet_name, row=idx)
             elif katalog_id in seen_ids:
-                self.add('error', 'duplicate_value_catalog_id', f'Duplicate Werteliste-ID: {katalog_id}', sheet='Werte', row=idx)
+                self.add('error', 'duplicate_value_catalog_id', f'Duplicate Enumeration-ID: {katalog_id}', sheet=value_sheet_name, row=idx)
             else:
                 seen_ids.add(katalog_id)
 
             expected_id = f"{self.slugify(label_en).replace('-', '_')}_enum" if label_en else None
             if katalog_id and expected_id and katalog_id != expected_id:
-                self.add('warning', 'noncanonical_value_list_id', f'Werteliste-ID is present but differs from canonical generated form {expected_id}', sheet='Werte', row=idx)
+                self.add('warning', 'noncanonical_value_list_id', f'Enumeration-ID is present but differs from canonical generated form {expected_id}', sheet=value_sheet_name, row=idx)
             if not label_en and katalog_id:
-                self.add('error', 'missing_required_english_translation', 'Werte.Designation (EN) must be filled in English (EN) if a Werteliste-ID is given.', sheet='Werte', row=idx)
+                self.add('error', 'missing_required_english_translation', 'Values.Designation (EN) must be filled in English (EN) if an Enumeration-ID is given.', sheet=value_sheet_name, row=idx)
             if not values_en_raw:
-                self.add('error', 'missing_required_english_translation', 'Werte.EnumerationValues must be filled in English (EN).', sheet='Werte', row=idx)
+                self.add_normalization(value_sheet_name, idx, 'Enumeration (EN)', values_en_raw, None, 'Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.', 'dropped-empty-enumeration-row', False)
+                continue
             if not any([values_de_raw, values_fr_raw, values_it_raw]):
-                self.add('error', 'missing_required_local_translation', 'Werte value lists require at least one local-language value in DE/IT/FR in addition to English.', sheet='Werte', row=idx)
+                self.add('error', 'missing_required_local_translation', 'Values value lists require at least one local-language value in DE/IT/FR in addition to English.', sheet=value_sheet_name, row=idx)
 
             if label_en and not any([label_de, label_fr, label_it]):
-                self.add('error', 'missing_required_local_translation', 'Werte.Designation requires at least one local-language value in DE/IT/FR in addition to English.', sheet='Werte', row=idx)
+                self.add('error', 'missing_required_local_translation', 'Values.Designation requires at least one local-language value in DE/IT/FR in addition to English.', sheet=value_sheet_name, row=idx)
 
-            for column_label, raw_value in [('EnumerationValues (EN)', values_en_raw), ('Werteliste (DE)', values_de_raw), ('Liste de valeurs (FR)', values_fr_raw), ('Lista valori (IT)', values_it_raw)]:
+            for column_label, raw_value in [('Enumeration (EN)', values_en_raw), ('Werteliste (DE)', values_de_raw), ('Liste de valeurs (FR)', values_fr_raw), ('Lista valori (IT)', values_it_raw)]:
                 if raw_value and not self.is_strict_string_list_syntax(raw_value):
-                    self.add('error', 'invalid_list_syntax', f'{column_label} must use JSON-style list syntax like ["One", "Two", "Three"]. Use decimal points, not commas, inside numbers.', sheet='Werte', row=idx)
+                    self.add('error', 'invalid_list_syntax', f'{column_label} must use JSON-style list syntax like ["One", "Two", "Three"]. Use decimal points, not commas, inside numbers.', sheet=value_sheet_name, row=idx)
 
-            values_en = self.parse_allowed_list(values_en_raw, sheet='Werte', row=idx, column='EnumerationValues (EN)') if values_en_raw else []
-            values_de = self.parse_allowed_list(values_de_raw, sheet='Werte', row=idx, column='Werteliste (DE)') if values_de_raw else []
-            values_fr = self.parse_allowed_list(values_fr_raw, sheet='Werte', row=idx, column='Liste de valeurs (FR)') if values_fr_raw else []
-            values_it = self.parse_allowed_list(values_it_raw, sheet='Werte', row=idx, column='Lista valori (IT)') if values_it_raw else []
+            values_en = self.parse_allowed_list(values_en_raw, sheet=value_sheet_name, row=idx, column='Enumeration (EN)') if values_en_raw else []
+            values_de = self.parse_allowed_list(values_de_raw, sheet=value_sheet_name, row=idx, column='Werteliste (DE)') if values_de_raw else []
+            values_fr = self.parse_allowed_list(values_fr_raw, sheet=value_sheet_name, row=idx, column='Liste de valeurs (FR)') if values_fr_raw else []
+            values_it = self.parse_allowed_list(values_it_raw, sheet=value_sheet_name, row=idx, column='Lista valori (IT)') if values_it_raw else []
 
             if values_en and len(values_en) != len(set(v.casefold() for v in values_en)):
                 self.add('error', 'duplicate_enumeration_values', f'EnumerationValues (EN) contains duplicate values for Werteliste-ID {katalog_id or idx}', sheet='Werte', row=idx)
@@ -595,12 +600,12 @@ class Validator:
             en_len = len(values_en)
             for column_label, parsed in [('Werteliste (DE)', values_de), ('Liste de valeurs (FR)', values_fr), ('Lista valori (IT)', values_it)]:
                 if parsed and values_en and len(parsed) != en_len:
-                    self.add('error', 'misaligned_multilingual_value_list', f'{column_label} has {len(parsed)} values but EnumerationValues (EN) has {en_len} for Werteliste-ID {katalog_id or idx}.', sheet='Werte', row=idx)
+                    self.add('error', 'misaligned_multilingual_value_list', f'{column_label} has {len(parsed)} values but Enumeration (EN) has {en_len} for Enumeration-ID {katalog_id or idx}.', sheet=value_sheet_name, row=idx)
 
             if status and status not in ALLOWED_LIFECYCLE:
-                self.add('error', 'invalid_value_catalog_status', f'Werte.Status must be one of the allowed lifecycle values, got: {status}', sheet='Werte', row=idx)
+                self.add('error', 'invalid_value_catalog_status', f'Values.Status must be one of the allowed lifecycle values, got: {status}', sheet=value_sheet_name, row=idx)
             if version_date and not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})$', version_date):
-                self.add('error', 'invalid_value_catalog_version_date', f'Werte.Versionsdatum should be ISO 8601 date-time with timezone, e.g. 2026-06-18T15:30+02:00, got: {version_date}', sheet='Werte', row=idx)
+                self.add('error', 'invalid_value_catalog_version_date', f'Values.Version date should be ISO 8601 date-time with timezone, e.g. 2026-06-18T15:30+02:00, got: {version_date}', sheet=value_sheet_name, row=idx)
 
     def validate_merkmalsgruppenkatalog(self):
         group_sheet = 'GroupOfProperties' if 'GroupOfProperties' in self.wb.sheetnames else ('Merkmalgruppen' if 'Merkmalgruppen' in self.wb.sheetnames else None)
@@ -612,7 +617,7 @@ class Validator:
         org_code = None
         if core_sheet:
             org_code = (self._dict_rows(core_sheet).get('OrganizationCode') or [None])[0]
-        expected_prefix = f"{org_code}_" if org_code else None
+        expected_prefix = f"{str(org_code)[:6]}_" if org_code else None
         seen_ids = set()
         seen_codes = set()
         seen_labels = {}
@@ -708,6 +713,7 @@ class Validator:
         ifc_uri_set = self.get_ifc_uri_set()
         document_source_codes = {d.get('SourceCode') for d in getattr(dd, 'documents', []) if d.get('SourceCode')}
         document_ids = {d.get('Document Identification') or d.get('Dokument-ID') or d.get('Document-ID') for d in getattr(dd, 'documents', []) if (d.get('Document Identification') or d.get('Dokument-ID') or d.get('Document-ID'))}
+        document_name_en_set = {d.get('DocumentName (EN)') or d.get('DocumentName') or d.get('DocumentLabel') for d in getattr(dd, 'documents', []) if (d.get('DocumentName (EN)') or d.get('DocumentName') or d.get('DocumentLabel'))}
         object_class_allowed = self._load_dropdown_values('Dropdownregeln.Objekt-Einordnung')
         status_allowed = self._load_dropdown_values('Dropdownregeln.Status')
         start_row = 10
@@ -820,15 +826,17 @@ class Validator:
                     if not source:
                         self.add('error', 'missing_prov_source', 'Objekte.Herkunft (PROV) is required and may be user-defined.', sheet=sheet_name, row=idx)
                     if not related_document:
-                        self.add_normalization(sheet_name, idx, 'Objekte.RelatedDocument (Document-ID)', related_document, 'Organisation', 'Empty RelatedDocument defaults to Organisation', 'default-related-document', True)
-                    elif document_ids and related_document not in document_ids:
+                        self.add_normalization(sheet_name, idx, 'RelatedDocumentName (EN)', related_document, 'Organisation', 'Empty RelatedDocument defaults to Organisation', 'default-related-document', True)
+                    elif document_name_en_set and related_document not in document_name_en_set:
                         self.add('error', 'unknown_related_document_id', f'RelatedDocumentName (EN) must reference an existing Documents.DocumentName (EN). Got: {related_document}', sheet=sheet_name, row=idx)
                     if ifc_obj and (not self._extract_base_ifc_entity(ifc_obj) or (ifc_uri_set and f'https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/{self._extract_base_ifc_entity(ifc_obj)}' not in ifc_uri_set)):
                         self.add('error', 'invalid_ifc_object_entity', f'IfcObject Entity must be a valid IFC entity. Got: {ifc_obj}', sheet=sheet_name, row=idx)
                     if ifc_type and (not self._extract_base_ifc_entity(ifc_type) or (ifc_uri_set and f'https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/{self._extract_base_ifc_entity(ifc_type)}' not in ifc_uri_set)):
                         self.add('error', 'invalid_ifc_type_object_entity', f'IfcTypeObject Entity must be a valid IFC entity when filled. Got: {ifc_type}', sheet=sheet_name, row=idx)
-                    if object_type and (not self._extract_base_ifc_entity(object_type) or (ifc_uri_set and f'https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/{self._extract_base_ifc_entity(object_type)}' not in ifc_uri_set)):
-                        self.add('error', 'invalid_object_type', f'ObjectType must be a valid IFC entity. Got: {object_type}', sheet=sheet_name, row=idx)
+                    if object_type:
+                        predefined_value = self._cell(row, headers.get('PredefinedType', 24))
+                        if str(predefined_value).strip() != 'USERDEFINED' and (not self._extract_base_ifc_entity(object_type) or (ifc_uri_set and f'https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/{self._extract_base_ifc_entity(object_type)}' not in ifc_uri_set)):
+                            self.add('error', 'invalid_object_type', f'ObjectType must be a valid IFC entity. Got: {object_type}', sheet=sheet_name, row=idx)
                 else:
                     if not source:
                         self.add('error', 'missing_source', 'Objekte.Herkunft (PROV) is required and may be user-defined.', sheet=sheet_name, row=idx)
@@ -974,14 +982,22 @@ class Validator:
                         self.add('error', 'invalid_ifc_linked_uri_namespace', f'{uri_label} is not in a valid buildingSMART/bSDD identifier namespace: {uri_value}', sheet=sheet_name, row=idx)
                     elif ifc_uri_set and uri_value not in ifc_uri_set:
                         self.add('error', 'unknown_ifc_linked_uri', f'{uri_label} not found in authoritative bSDD harvest: {uri_value}', sheet=sheet_name, row=idx)
-            expected_value_list_id = f"{self.slugify(prop_en or merkmal).replace('-', '_')}_enum" if (prop_en or merkmal) else None
-            if value_list_id:
-                if expected_value_list_id and value_list_id != expected_value_list_id:
-                    self.add('warning', 'noncanonical_value_list_id', f'EnumerationDesignation (EN) is present but differs from canonical Values.Designation (EN) expectation {expected_value_list_id}', sheet=sheet_name, row=idx)
+            expected_value_designation = None
+            if self.is_abgeglichen_template() and value_ids:
+                value_designations = set()
+                if 'Values' in self.wb.sheetnames:
+                    vws = self.wb['Values']
+                    vheaders = self._header_index_map(vws, 1)
+                    for vidx, vrow in self._iter_data_rows(vws, 8):
+                        vlabel_en = self._cell(vrow, vheaders.get('Designation (EN)', 9))
+                        if vlabel_en:
+                            value_designations.add(vlabel_en)
+                if value_list_id and value_list_id not in value_designations:
+                    self.add('warning', 'noncanonical_value_list_id', f'EnumerationDesignation (EN) is present but does not match any existing Values.Designation (EN): {value_list_id}', sheet=sheet_name, row=idx)
+                elif not value_list_id and value_designations:
+                    self.add('warning', 'missing_value_list_id', 'EnumerationDesignation (EN) is missing although this property appears to rely on an enumeration. Fill it with the matching Values.Designation (EN).', sheet=sheet_name, row=idx)
             elif value_list or ((self.is_v20260619_template() or self.is_abgeglichen_template()) and value_ids):
-                self.add('warning', 'missing_value_list_id', f'EnumerationDesignation (EN) is missing; expected matching Values.Designation (EN) would derive to {expected_value_list_id}', sheet=sheet_name, row=idx)
-                if expected_value_list_id:
-                    self.add_normalization(sheet_name, idx, 'Werteliste-ID', value_list_id, expected_value_list_id, 'Missing Werteliste-ID is derivable from Property/Merkmal', 'derived-enumeration-id', True)
+                self.add('warning', 'missing_value_list_id', 'EnumerationDesignation (EN) is missing although this property appears to rely on an enumeration. Fill it with the matching Values.Designation (EN).', sheet=sheet_name, row=idx)
             if value_list:
                 parsed = self.parse_allowed_list(value_list, sheet=sheet_name, row=idx, column='Werteliste')
                 if len(parsed) != len(set(parsed)):
@@ -1049,8 +1065,8 @@ class Validator:
             revision = doc.get('Revision')
             owner = doc.get('Owner')
             doc_code = doc.get('DocumentCode')
-            group_code = doc.get('DocumentGroupCode')
-            group_label = doc.get('DocumentGroupName') or doc.get('DocumentGroupLabel')
+            group_code = doc.get('Security level/Sicherheitsstufe/Niveau de sécurité/Livello di sicurezza') or doc.get('DocumentGroupCode') or doc.get('Sicherheitsstufe')
+            group_label = doc.get('Accessibility/Zugänglichkeit/Accessibilité/Accessibilità') or doc.get('DocumentGroupName') or doc.get('DocumentGroupLabel') or doc.get('Zugänglichkeit')
             status = doc.get('status') or doc.get('Status')
             version_date = doc.get('Versionsdatum') or doc.get('VersionDate')
             if self.is_abgeglichen_template() and not any([doc_name, doc_name_de, doc_name_fr, doc_name_it, revision, owner, doc_code, group_code, group_label, status, version_date]):
@@ -1076,11 +1092,11 @@ class Validator:
             if not group_code:
                 self.add('error', 'missing_document_group_code', 'Document row missing Sicherheitsstufe', sheet=sheet_name, row=i)
             elif document_security_allowed and group_code not in document_security_allowed:
-                self.add('error', 'invalid_document_security_level', f'Dokumente.Sicherheitsstufe must come from Dropdownregeln.ISG - Informationssicherheitsgesetz. Got: {group_code}', sheet=sheet_name, row=i)
+                self.add('error', 'invalid_document_security_level', f'Documents.Security level/Sicherheitsstufe/Niveau de sécurité/Livello di sicurezza must come from Rules.ISG - Informationssicherheitsgesetz. Got: {group_code}', sheet=sheet_name, row=i)
             if not group_label:
                 self.add('error', 'missing_document_group_label', 'Document row missing Zugänglichkeit', sheet=sheet_name, row=i)
             elif document_access_allowed and group_label not in document_access_allowed:
-                self.add('error', 'invalid_document_accessibility', f'Dokumente.Zugänglichkeit must come from Dropdownregeln.FAIR Prinzipien. Got: {group_label}', sheet=sheet_name, row=i)
+                self.add('error', 'invalid_document_accessibility', f'Documents.Accessibility/Zugänglichkeit/Accessibilité/Accessibilità must come from Rules.FAIR Prinzipien. Got: {group_label}', sheet=sheet_name, row=i)
             elif group_code:
                 prev = seen_group_map.get(group_code)
                 if prev and prev != group_label:
@@ -1150,19 +1166,28 @@ class Validator:
             return
         if self.is_abgeglichen_template():
             object_label_map = {}
-            for c in getattr(dd, 'classes', []):
-                for value in [getattr(c, 'name_en', None), getattr(c, 'name_de', None), getattr(c, 'name_fr', None), getattr(c, 'name_it', None)]:
-                    norm = self._norm(value)
-                    if norm:
-                        object_label_map[norm] = c.code
+            class_sheet = 'Classes' if 'Classes' in self.wb.sheetnames else None
+            if class_sheet:
+                cws = self.wb[class_sheet]
+                for ridx, crow in self._iter_data_rows(cws, 8):
+                    class_code = self._cell(crow, 9)
+                    for col in [12, 13, 14, 15]:
+                        value = self._cell(crow, col)
+                        norm = self._norm(value)
+                        if norm:
+                            object_label_map[norm] = class_code or value
             property_label_map = {}
             property_allowed_values = {}
-            for p in getattr(dd, 'properties', []):
-                property_allowed_values[p.code] = self.allowed_values_for_property(p.code)
-                for value in [getattr(p, 'name_en', None), getattr(p, 'name_de', None), getattr(p, 'name_fr', None), getattr(p, 'name_it', None)]:
-                    norm = self._norm(value)
-                    if norm:
-                        property_label_map[norm] = p.code
+            if 'Properties' in self.wb.sheetnames:
+                pws = self.wb['Properties']
+                for ridx, prow in self._iter_data_rows(pws, 8):
+                    prop_code = self._cell(prow, 5)
+                    if prop_code:
+                        property_allowed_values[prop_code] = self.allowed_values_for_property(prop_code)
+                    for value in [self._cell(prow, 7), self._cell(prow, 8), self._cell(prow, 9), self._cell(prow, 10)]:
+                        norm = self._norm(value)
+                        if norm and prop_code:
+                            property_label_map[norm] = prop_code
             group_sheet = 'GroupOfProperties' if 'GroupOfProperties' in self.wb.sheetnames else ('Merkmalgruppen' if 'Merkmalgruppen' in self.wb.sheetnames else None)
             group_label_map = {}
             if group_sheet:
@@ -1192,7 +1217,7 @@ class Validator:
                     # If there is a technical ID but it is unknown, report it; otherwise ignore decorative row-2 labels.
                     if prop_identifier:
                         display = label or prop_identifier
-                        self.add('error', 'matrix_unknown_property_label', f'Data_Template property reference not found in Merkmale labels/IDs (EN/DE/FR/IT): {display}', sheet=matrix_sheet, row=3)
+                        self.add('error', 'matrix_unknown_property_label', f'Data_Template property reference not found in Properties labels/IDs (DE/EN/FR/IT): {display}', sheet=matrix_sheet, row=3)
                     continue
                 property_cols.append((col_idx, prop_code, label or prop_identifier))
             for ridx in range(8, ws.max_row + 1):
@@ -1202,9 +1227,9 @@ class Validator:
                 object_label = self._cell([ws.cell(ridx, 1).value], 1)
                 property_group_label = self._cell([ws.cell(ridx, 3).value], 1)
                 if object_label and self._norm(object_label) not in object_label_map:
-                    self.add('error', 'matrix_unknown_object_label', f'Data_Template object reference not found in Objekte labels (EN/DE/FR/IT): {object_label}', sheet=matrix_sheet, row=ridx)
+                    self.add('error', 'matrix_unknown_object_label', f'Data_Template class reference not found in Classes labels (DE/EN/FR/IT): {object_label}', sheet=matrix_sheet, row=ridx)
                 if property_group_label and self._norm(property_group_label) not in group_label_map:
-                    self.add('error', 'matrix_unknown_group_label', f'Data_Template property-group reference not found in Merkmalgruppen labels (EN/DE/FR/IT): {property_group_label}', sheet=matrix_sheet, row=ridx)
+                    self.add('error', 'matrix_unknown_group_label', f'Data_Template group reference not found in GroupOfProperties labels (DE/EN/FR/IT): {property_group_label}', sheet=matrix_sheet, row=ridx)
                 for col_idx, prop_code, label in property_cols:
                     cell = self._cell([ws.cell(ridx, col_idx).value], 1)
                     if cell is None or str(cell).strip() == '':

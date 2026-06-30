@@ -1,46 +1,1239 @@
 {
-  "workbook": "/home/Dave/.openclaw/workspace-datadict/P_workspace_codat3_validator/templates/Strukturvorlage_DataDictionary_v2_empty.xlsx",
+  "workbook": "/home/Dave/.openclaw/workspace-datadict/P_workspace_codat3_validator/templates/test_files/Strukturvorlage_DataDictionary_v5_AreaMgmt.xlsx",
   "summary": {
-    "parser_valid": false,
-    "pipeline_valid": false,
+    "parser_valid": true,
+    "pipeline_valid": true,
     "governance_valid": false,
-    "errors": 4,
-    "warnings": 0,
-    "normalizations": 0
+    "errors": 0,
+    "warnings": 38,
+    "normalizations": 92
   },
   "findings": [
     {
-      "level": "error",
-      "code": "missing_dictionary_field",
-      "message": "Erforderlicher Header-Wert fehlt: OrganizationCode. Verwenden Sie einen kurzen Code in Kleinbuchstaben mit maximal 6 Zeichen.",
-      "sheet": "Header",
+      "level": "warning",
+      "code": "missing_object_id",
+      "message": "Objekt-ID is system-generated and should not be authored manually. Generated value: surrounding-area",
+      "sheet": "Classes",
       "cell": null,
-      "row": 4
+      "row": 10
     },
     {
-      "level": "error",
-      "code": "missing_dictionary_field",
-      "message": "Erforderlicher Header-Wert fehlt: DictionaryName (EN). Füllen Sie zusätzlich mindestens einen lokalen DictionaryName in DE, FR oder IT aus.",
-      "sheet": "Header",
+      "level": "warning",
+      "code": "missing_identification",
+      "message": "Classification source is given but Identification is missing. Please add it if applicable, otherwise ignore.",
+      "sheet": "Classes",
+      "cell": null,
+      "row": 10
+    },
+    {
+      "level": "warning",
+      "code": "missing_classification_name",
+      "message": "Classification section is in use but final Name column is missing.",
+      "sheet": "Classes",
+      "cell": null,
+      "row": 10
+    },
+    {
+      "level": "warning",
+      "code": "missing_object_id",
+      "message": "Objekt-ID is system-generated and should not be authored manually. Generated value: gross-floor-area",
+      "sheet": "Classes",
+      "cell": null,
+      "row": 11
+    },
+    {
+      "level": "warning",
+      "code": "missing_identification",
+      "message": "Classification source is given but Identification is missing. Please add it if applicable, otherwise ignore.",
+      "sheet": "Classes",
+      "cell": null,
+      "row": 11
+    },
+    {
+      "level": "warning",
+      "code": "missing_classification_name",
+      "message": "Classification section is in use but final Name column is missing.",
+      "sheet": "Classes",
+      "cell": null,
+      "row": 11
+    },
+    {
+      "level": "warning",
+      "code": "missing_object_id",
+      "message": "Objekt-ID is system-generated and should not be authored manually. Generated value: room",
+      "sheet": "Classes",
+      "cell": null,
+      "row": 12
+    },
+    {
+      "level": "warning",
+      "code": "missing_identification",
+      "message": "Classification source is given but Identification is missing. Please add it if applicable, otherwise ignore.",
+      "sheet": "Classes",
+      "cell": null,
+      "row": 12
+    },
+    {
+      "level": "warning",
+      "code": "missing_classification_name",
+      "message": "Classification section is in use but final Name column is missing.",
+      "sheet": "Classes",
+      "cell": null,
+      "row": 12
+    },
+    {
+      "level": "warning",
+      "code": "missing_object_id",
+      "message": "Objekt-ID is system-generated and should not be authored manually. Generated value: external-room",
+      "sheet": "Classes",
+      "cell": null,
+      "row": 13
+    },
+    {
+      "level": "warning",
+      "code": "missing_identification",
+      "message": "Classification source is given but Identification is missing. Please add it if applicable, otherwise ignore.",
+      "sheet": "Classes",
+      "cell": null,
+      "row": 13
+    },
+    {
+      "level": "warning",
+      "code": "missing_classification_name",
+      "message": "Classification section is in use but final Name column is missing.",
+      "sheet": "Classes",
+      "cell": null,
+      "row": 13
+    },
+    {
+      "level": "warning",
+      "code": "missing_object_id",
+      "message": "Objekt-ID is system-generated and should not be authored manually. Generated value: parking-space",
+      "sheet": "Classes",
+      "cell": null,
+      "row": 14
+    },
+    {
+      "level": "warning",
+      "code": "missing_identification",
+      "message": "Classification source is given but Identification is missing. Please add it if applicable, otherwise ignore.",
+      "sheet": "Classes",
+      "cell": null,
+      "row": 14
+    },
+    {
+      "level": "warning",
+      "code": "missing_classification_name",
+      "message": "Classification section is in use but final Name column is missing.",
+      "sheet": "Classes",
+      "cell": null,
+      "row": 14
+    },
+    {
+      "level": "warning",
+      "code": "missing_object_id",
+      "message": "Objekt-ID is system-generated and should not be authored manually. Generated value: rentable-area",
+      "sheet": "Classes",
+      "cell": null,
+      "row": 15
+    },
+    {
+      "level": "warning",
+      "code": "missing_identification",
+      "message": "Classification source is given but Identification is missing. Please add it if applicable, otherwise ignore.",
+      "sheet": "Classes",
+      "cell": null,
+      "row": 15
+    },
+    {
+      "level": "warning",
+      "code": "missing_classification_name",
+      "message": "Classification section is in use but final Name column is missing.",
+      "sheet": "Classes",
+      "cell": null,
+      "row": 15
+    },
+    {
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
       "cell": null,
       "row": 8
     },
     {
-      "level": "error",
-      "code": "missing_dictionary_field",
-      "message": "Erforderlicher Header-Wert fehlt: DictionaryVersion. Verwenden Sie Semantic Versioning wie 1.0.0.",
-      "sheet": "Header",
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
       "cell": null,
       "row": 9
     },
     {
-      "level": "error",
-      "code": "missing_dictionary_field",
-      "message": "Erforderlicher Header-Wert fehlt: LifecycleStatus. Wählen Sie einen der zulässigen Statuswerte aus.",
-      "sheet": "Header",
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
+      "cell": null,
+      "row": 10
+    },
+    {
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
+      "cell": null,
+      "row": 11
+    },
+    {
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
+      "cell": null,
+      "row": 37
+    },
+    {
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
+      "cell": null,
+      "row": 38
+    },
+    {
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
+      "cell": null,
+      "row": 39
+    },
+    {
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
+      "cell": null,
+      "row": 40
+    },
+    {
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
+      "cell": null,
+      "row": 41
+    },
+    {
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
+      "cell": null,
+      "row": 42
+    },
+    {
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
+      "cell": null,
+      "row": 43
+    },
+    {
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
+      "cell": null,
+      "row": 44
+    },
+    {
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
+      "cell": null,
+      "row": 52
+    },
+    {
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
+      "cell": null,
+      "row": 53
+    },
+    {
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
+      "cell": null,
+      "row": 54
+    },
+    {
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
+      "cell": null,
+      "row": 55
+    },
+    {
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
+      "cell": null,
+      "row": 56
+    },
+    {
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
+      "cell": null,
+      "row": 57
+    },
+    {
+      "level": "warning",
+      "code": "ifc_set_without_ifc_uri",
+      "message": "IfcPropertySet / IfcQuantitySet is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.",
+      "sheet": "Properties",
+      "cell": null,
+      "row": 58
+    },
+    {
+      "level": "warning",
+      "code": "system_generated_document_id_override",
+      "message": "Document-ID is a system-generated field. Manual value bdch-d-31040000 will be overwritten by generated value document-type-catalogue.",
+      "sheet": "Documents",
       "cell": null,
       "row": 13
     }
   ],
-  "normalizations": []
+  "normalizations": [
+    {
+      "sheet": "Header",
+      "row": 5,
+      "column": "DictionaryCode",
+      "original_value": null,
+      "normalized_value": "data_dictionary_area_management",
+      "reason": "System-generated DictionaryCode derived from DictionaryName (EN)",
+      "normalization_kind": "derived-dictionary-code",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Header",
+      "row": 10,
+      "column": "DictionaryUri",
+      "original_value": null,
+      "normalized_value": "https://example.com/bDCH/data_dictionary_area_management",
+      "reason": "Derived DictionaryUri based on OrganizationCode and DictionaryCode",
+      "normalization_kind": "derived-dictionary-uri",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Values",
+      "row": 10,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 11,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 20,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 21,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 22,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 23,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 24,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 25,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 26,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 27,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 28,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 30,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 32,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 38,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 39,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 40,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 41,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 42,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 43,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 44,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 46,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 48,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 50,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 51,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 53,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 54,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 55,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 56,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 57,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Values",
+      "row": 58,
+      "column": "Enumeration (EN)",
+      "original_value": null,
+      "normalized_value": null,
+      "reason": "Da keine erfassten Values.Enumeration (EN) gefunden wurden, wurde der Zeileneintrag für die Listenvalidierung ignoriert.",
+      "normalization_kind": "dropped-empty-enumeration-row",
+      "safe_auto_normalization": false
+    },
+    {
+      "sheet": "Classes",
+      "row": 10,
+      "column": "Objekt-ID",
+      "original_value": null,
+      "normalized_value": "surrounding-area",
+      "reason": "System-generated ID derived from Designation/Bezeichnung",
+      "normalization_kind": "derived-object-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Classes",
+      "row": 11,
+      "column": "Objekt-ID",
+      "original_value": null,
+      "normalized_value": "gross-floor-area",
+      "reason": "System-generated ID derived from Designation/Bezeichnung",
+      "normalization_kind": "derived-object-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Classes",
+      "row": 12,
+      "column": "Objekt-ID",
+      "original_value": null,
+      "normalized_value": "room",
+      "reason": "System-generated ID derived from Designation/Bezeichnung",
+      "normalization_kind": "derived-object-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Classes",
+      "row": 13,
+      "column": "Objekt-ID",
+      "original_value": null,
+      "normalized_value": "external-room",
+      "reason": "System-generated ID derived from Designation/Bezeichnung",
+      "normalization_kind": "derived-object-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Classes",
+      "row": 14,
+      "column": "Objekt-ID",
+      "original_value": null,
+      "normalized_value": "parking-space",
+      "reason": "System-generated ID derived from Designation/Bezeichnung",
+      "normalization_kind": "derived-object-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Classes",
+      "row": 15,
+      "column": "Objekt-ID",
+      "original_value": null,
+      "normalized_value": "rentable-area",
+      "reason": "System-generated ID derived from Designation/Bezeichnung",
+      "normalization_kind": "derived-object-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 8,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "predefinedtype",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 9,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "objecttype",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 10,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "name",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 11,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "longname",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 12,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "sia-416-2003-code",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 13,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "sia-416-2003-label",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 14,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "sia-380-2015-code",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 15,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "sia-380-2015-label",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 16,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "sia-2024-2021-code",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 17,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "sia-2024-2021-label",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 18,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "sia-d0615-2000-code",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 19,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "sia-d0615-2000-label",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 20,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "programuse",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 21,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "roomtype",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 22,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "unittype",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 23,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "unit-id",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 24,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "roomnumberfm",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 25,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "roomsignallabel",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 26,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "cleaninggroup",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 27,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "areaload",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 28,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "pointload",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 29,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "energyreferencearea",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 30,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "windowscleaningarea",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 31,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "windowsopenable",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 32,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "occupant",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 33,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "shading",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 34,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "ishumidified",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 35,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "isdehumidified",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 36,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "isrentable",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 37,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "isexternal",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 38,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "occupancytype",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 39,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "minimumheadroom",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 40,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "occupancynumberpeak",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 41,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "occupancynumber",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 42,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "floorcovering",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 43,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "wallcovering",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 44,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "ceilingcovering",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 45,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "naturalventilation",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 46,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "naturalventilationrate",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 47,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "mechanicalventilation",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 48,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "mechanicalventilationrate",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 49,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "airconditioning",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 50,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "temperaturesetpoint",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 51,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "humiditysetpoint",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 52,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "fireexit",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 53,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "grossfloorarea",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 54,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "grossvolume",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 55,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "netfloorarea",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 56,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "netvolume",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 57,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "netwallarea",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 58,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "height",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 59,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "aboveground",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Properties",
+      "row": 60,
+      "column": "Merkmal-ID",
+      "original_value": null,
+      "normalized_value": "costzone",
+      "reason": "System-generated ID derived from Property (EN)",
+      "normalization_kind": "derived-property-id",
+      "safe_auto_normalization": true
+    },
+    {
+      "sheet": "Documents",
+      "row": 13,
+      "column": "Document-ID",
+      "original_value": "bdch-d-31040000",
+      "normalized_value": "document-type-catalogue",
+      "reason": "Manual ID overridden by system-generated ID derived from DocumentName",
+      "normalization_kind": "derived-document-id",
+      "safe_auto_normalization": true
+    }
+  ]
 }

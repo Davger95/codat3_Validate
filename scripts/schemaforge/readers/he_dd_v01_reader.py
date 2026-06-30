@@ -314,22 +314,31 @@ def _parse_properties(ws, meta: DictionaryMeta) -> tuple[list[DDProperty], list[
 
 
 def _parse_documents(ws, meta: DictionaryMeta) -> list[dict]:
-    rows = _row_dicts(ws, header_row=3, data_start=9)
+    if ws.title == 'Documents':
+        rows = _row_dicts(ws, header_row=1, data_start=8)
+    else:
+        rows = _row_dicts(ws, header_row=3, data_start=9)
     docs = []
     for r in rows:
-        source_code = _str(r.get("SourceCode")) or _str(r.get("Zuordnung")) or ""
-        document_code = _str(r.get("DocumentCode")) or _str(r.get("Identification")) or ""
-        document_label = _str(r.get("DocumentLabel")) or _str(r.get("Name")) or ""
-        document_group_code = _str(r.get("DocumentGroupCode")) or _str(r.get("Identification_1")) or ""
-        document_group_label = _str(r.get("DocumentGroupLabel")) or _str(r.get("Dokumentgruppe")) or ""
-        dokument_id = _str(r.get("Dokument-ID")) or slugify(f"{source_code}-{document_code}")
+        source_code = _str(r.get("SourceCode")) or _str(r.get("Zuordnung")) or _str(r.get("DocumentOwner")) or _str(r.get("Owner")) or ""
+        document_code = _str(r.get("Document-Code")) or _str(r.get("DocumentCode")) or _str(r.get("Identification")) or ""
+        document_label = _str(r.get("DocumentName (EN)")) or _str(r.get("DocumentLabel")) or _str(r.get("Name")) or ""
+        document_group_code = _str(r.get("Security level/Sicherheitsstufe/Niveau de sécurité/Livello di sicurezza")) or _str(r.get("DocumentGroupCode")) or _str(r.get("Identification_1")) or ""
+        document_group_label = _str(r.get("Accessibility/Zugänglichkeit/Accessibilité/Accessibilità")) or _str(r.get("DocumentGroupLabel")) or _str(r.get("Dokumentgruppe")) or ""
+        dokument_id = _str(r.get("Document-ID")) or _str(r.get("Dokument-ID")) or slugify(document_label or f"{source_code}-{document_code}")
         item = dict(r)
         item["SourceCode"] = source_code
         item["Dokument-ID"] = dokument_id
         item["DocumentCode"] = document_code
         item["DocumentLabel"] = document_label
+        item["DocumentName"] = document_label
+        item["DocumentName (EN)"] = document_label
+        item["Owner"] = _str(r.get("DocumentOwner")) or _str(r.get("Owner")) or ""
+        item["VersionDate"] = _str(r.get("Version date")) or _str(r.get("VersionDate")) or ""
         item["DocumentGroupCode"] = document_group_code
         item["DocumentGroupName"] = document_group_label
+        item["Sicherheitsstufe"] = document_group_code
+        item["Zugänglichkeit"] = document_group_label
         base_doc = f"{_lindas_base(meta)}document/"
         item["OwnedUri"] = _safe_uri(base_doc, dokument_id)
         docs.append(item)
@@ -557,8 +566,8 @@ def _parse_objects_abgeglichen(ws, meta: DictionaryMeta) -> list[DDClass]:
         setattr(cls, "ifc_type_object_entity_code", _str(r.get("IfcTypeObject Entity")))
         setattr(cls, "object_type", _str(r.get("ObjectType")))
         setattr(cls, "status", _str(r.get("Status")) or "Preview")
-        setattr(cls, "version_date", _str(r.get("Versionsdatum")))
-        setattr(cls, "related_document", _str(r.get("Objekte.RelatedDocument (Document-ID)")) or _str(r.get("RelatedDocument (Document-ID)")) or _str(r.get("RelatedDocument")) or 'Organisation')
+        setattr(cls, "version_date", _str(r.get("Version date")) or _str(r.get("Versionsdatum")))
+        setattr(cls, "related_document", _str(r.get("RelatedDocumentName (EN)")) or _str(r.get("Classes.RelatedDocumentName (EN)")) or _str(r.get("Objekte.RelatedDocument (Document-ID)")) or _str(r.get("RelatedDocument (Document-ID)")) or _str(r.get("RelatedDocument")) or 'Organisation')
         classes.append(cls)
     return classes
 
@@ -634,28 +643,19 @@ def _parse_properties_abgeglichen(ws, value_ws, meta: DictionaryMeta) -> tuple[l
 
 def _parse_documents_abgeglichen(ws, meta: DictionaryMeta) -> list[dict]:
     docs = []
-    header_row = None
-    for marker in ('DocumentName (EN)', 'DocumentName', 'DocumentationName', 'Bezeichnung (DE)'):
-        try:
-            header_row = _detect_header_row(ws, marker)
-            break
-        except ValueError:
-            continue
-    if header_row is None:
-        raise ValueError(f"Could not find document header row in sheet {ws.title}")
-    rows = _row_dicts(ws, header_row=header_row, data_start=header_row + 7)
-    for row_idx, r in enumerate(rows, start=header_row + 1):
-        document_uri = _str(r.get("URI"))
+    rows = _row_dicts(ws, header_row=1, data_start=8)
+    for row_idx, r in enumerate(rows, start=8):
+        document_uri = _str(r.get("GUID/URI")) or _str(r.get("URI"))
         document_identification = _str(r.get("Document-ID")) or _str(r.get("Document-ID\nIdentification"))
         document_code = _str(r.get("Document-Code")) or _str(r.get("Document-Code\nIdentification"))
         document_name = _str(r.get("DocumentName (EN)")) or _str(r.get("DocumentName")) or _str(r.get("DocumentationName"))
-        security_level = _str(r.get("Sicherheitsstufe"))
-        accessibility = _str(r.get("Zugänglichkeit"))
+        security_level = _str(r.get("Security level/Sicherheitsstufe/Niveau de sécurité/Livello di sicurezza")) or _str(r.get("Sicherheitsstufe"))
+        accessibility = _str(r.get("Accessibility/Zugänglichkeit/Accessibilité/Accessibilità")) or _str(r.get("Zugänglichkeit"))
         revision = _str(r.get("Revision"))
-        owner = _str(r.get("\tDocumentOwner")) or _str(r.get("DocumentOwner"))
+        owner = _str(r.get("DocumentOwner")) or _str(r.get("\tDocumentOwner")) or _str(r.get("Owner"))
         if not any([document_uri, document_identification, document_code, document_name, security_level, accessibility, revision, owner]):
             continue
-        dokument_id = slugify(f"{document_identification or document_code or document_name or row_idx}")
+        dokument_id = _str(r.get("Document-ID")) or slugify(f"{document_identification or document_code or document_name or row_idx}")
         item = {
             "SourceCode": owner or "Organisation",
             "Dokument-ID": dokument_id,
@@ -668,6 +668,7 @@ def _parse_documents_abgeglichen(ws, meta: DictionaryMeta) -> list[dict]:
             "Dokument Name": document_name,
             "DocumentationName": document_name,
             "DocumentName": document_name,
+            "DocumentName (EN)": document_name,
             "DocumentName (DE)": _str(r.get("Bezeichnung (DE)")) or _str(r.get("DocumentName (DE)")) or _str(r.get("DE")),
             "DocumentationName (FR)": _str(r.get("Désignation (FR)")) or _str(r.get("DocumentName (FR)")) or _str(r.get("DocumentationName (FR)")) or _str(r.get("FR")),
             "DocumentationName (IT)": _str(r.get("Designazione (IT)")) or _str(r.get("DocumentName (IT)")) or _str(r.get("DocumentationName (IT)")) or _str(r.get("IT")),
@@ -677,6 +678,8 @@ def _parse_documents_abgeglichen(ws, meta: DictionaryMeta) -> list[dict]:
             "Dokument URI": document_uri,
             "Sicherheitsstufe": security_level,
             "Zugänglichkeit": accessibility,
+            "Status": _str(r.get("Status")),
+            "VersionDate": _str(r.get("Version date")) or _str(r.get("VersionDate")),
         }
         docs.append(item)
     return docs

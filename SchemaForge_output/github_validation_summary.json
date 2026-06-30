@@ -1,9 +1,9 @@
 {
-  "workbook": "/home/Dave/.openclaw/workspace-datadict/P_workspace_codat3_validator/templates/Strukturvorlage_DataDictionary_v2_empty.xlsx",
-  "parser_valid": false,
-  "pipeline_valid": false,
+  "workbook": "/home/Dave/.openclaw/workspace-datadict/P_workspace_codat3_validator/templates/test_files/Strukturvorlage_DataDictionary_v5_AreaMgmt.xlsx",
+  "parser_valid": true,
+  "pipeline_valid": true,
   "governance_valid": false,
-  "errors": 4,
-  "warnings": 0,
-  "normalizations": 0
+  "errors": 0,
+  "warnings": 38,
+  "normalizations": 92
 }
