@@ -4,14 +4,40 @@
 
 ## Gesamtergebnis
 
-- Blockierende Fehler: **0**
+- Blockierende Fehler: **4**
 - Warnungen: **0**
 - Normalisierungen / abgeleitete Hinweise: **0**
-- Pipeline gültig: **True**
+- Pipeline gültig: **False**
 
-> Es wurden keine blockierenden Validierungsfehler gefunden. Bitte prüfen Sie trotzdem die Warnungen und Normalisierungshinweise.
+> Das Workbook ist **noch nicht bereit für einen fehlerfreien Durchlauf**. Bitte prüfen Sie zuerst die blockierenden Fehler.
 
 ## Befunde nach Thema
+
+### Other validation issues
+
+- **Missing dictionary field** (ERROR)
+  - Ort: Sheet: `Header`, Row: `4`
+  - Bedeutung: Der Validator hat ein Problem gefunden, das geprüft werden sollte.
+  - Empfohlene Korrektur: Öffnen Sie das referenzierte Sheet und die betroffene Row, prüfen Sie den Wert und korrigieren Sie ihn gemäss der Workbook-Guidance.
+  - Technisches Detail: `missing_dictionary_field` — Missing required Header value: OrganizationCode. Use a short lowercase code, max 7 characters.
+
+- **Missing dictionary field** (ERROR)
+  - Ort: Sheet: `Header`, Row: `8`
+  - Bedeutung: Der Validator hat ein Problem gefunden, das geprüft werden sollte.
+  - Empfohlene Korrektur: Öffnen Sie das referenzierte Sheet und die betroffene Row, prüfen Sie den Wert und korrigieren Sie ihn gemäss der Workbook-Guidance.
+  - Technisches Detail: `missing_dictionary_field` — Missing required Header value: DictionaryName (EN). Also fill at least one local DictionaryName in DE, FR, or IT.
+
+- **Missing dictionary field** (ERROR)
+  - Ort: Sheet: `Header`, Row: `9`
+  - Bedeutung: Der Validator hat ein Problem gefunden, das geprüft werden sollte.
+  - Empfohlene Korrektur: Öffnen Sie das referenzierte Sheet und die betroffene Row, prüfen Sie den Wert und korrigieren Sie ihn gemäss der Workbook-Guidance.
+  - Technisches Detail: `missing_dictionary_field` — Missing required Header value: DictionaryVersion. Use semantic versioning like 1.0.0.
+
+- **Missing dictionary field** (ERROR)
+  - Ort: Sheet: `Header`, Row: `13`
+  - Bedeutung: Der Validator hat ein Problem gefunden, das geprüft werden sollte.
+  - Empfohlene Korrektur: Öffnen Sie das referenzierte Sheet und die betroffene Row, prüfen Sie den Wert und korrigieren Sie ihn gemäss der Workbook-Guidance.
+  - Technisches Detail: `missing_dictionary_field` — Missing required Header value: LifecycleStatus. Choose one of the allowed status values.
 
 ## Normalisierungshinweise
 

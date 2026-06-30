@@ -1,9 +1,9 @@
 {
   "workbook": "/home/Dave/.openclaw/workspace-datadict/P_workspace_codat3_validator/templates/Strukturvorlage_DataDictionary_v2_empty.xlsx",
-  "parser_valid": true,
-  "pipeline_valid": true,
-  "governance_valid": true,
-  "errors": 0,
+  "parser_valid": false,
+  "pipeline_valid": false,
+  "governance_valid": false,
+  "errors": 4,
   "warnings": 0,
   "normalizations": 0
 }

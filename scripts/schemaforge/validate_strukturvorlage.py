@@ -365,7 +365,16 @@ class Validator:
         for key in core_required:
             value_row = core_rows.get(key)
             if not value_row or not value_row[0]:
-                self.add('error', 'missing_dictionary_field', f'Missing required dictionary core value: {key}', sheet=core_sheet, row=value_row[1] if value_row else None)
+                if key == 'DictionaryName (EN)':
+                    self.add('error', 'missing_dictionary_field', 'Missing required Header value: DictionaryName (EN). Also fill at least one local DictionaryName in DE, FR, or IT.', sheet=core_sheet, row=value_row[1] if value_row else None)
+                elif key == 'OrganizationCode':
+                    self.add('error', 'missing_dictionary_field', 'Missing required Header value: OrganizationCode. Use a short lowercase code, max 7 characters.', sheet=core_sheet, row=value_row[1] if value_row else None)
+                elif key == 'DictionaryVersion':
+                    self.add('error', 'missing_dictionary_field', 'Missing required Header value: DictionaryVersion. Use semantic versioning like 1.0.0.', sheet=core_sheet, row=value_row[1] if value_row else None)
+                elif key == 'LifecycleStatus':
+                    self.add('error', 'missing_dictionary_field', 'Missing required Header value: LifecycleStatus. Choose one of the allowed status values.', sheet=core_sheet, row=value_row[1] if value_row else None)
+                else:
+                    self.add('error', 'missing_dictionary_field', f'Missing required Header value: {key}', sheet=core_sheet, row=value_row[1] if value_row else None)
 
         org_code, org_row = core_rows.get('OrganizationCode', (None, None))
         if org_code and not re.match(r'^[a-z0-9-]{1,7}$', org_code):
@@ -722,7 +731,7 @@ class Validator:
                     status = self._cell(row, headers.get('Status', 26))
                     version_date = self._cell(row, headers.get('Version date', headers.get('Versionsdatum', 27)))
                     source = self._cell(row, headers.get('Provenance (PROV)', headers.get('Herkunft (PROV)', 28)))
-                    related_document = self._cell(row, headers.get('Objekte.RelatedDocument (Document-ID)', headers.get('RelatedDocument (Document-ID)', headers.get('RelatedDocument', 30))))
+                    related_document = self._cell(row, headers.get('RelatedDocumentName (EN)', headers.get('Classes.RelatedDocumentName (EN)', headers.get('Objekte.RelatedDocument (Document-ID)', headers.get('RelatedDocument (Document-ID)', headers.get('RelatedDocument', 30))))))
                     identification = None
                     final_name = None
                     self._require_en_plus_one_local(row, idx, sheet_name, headers.get('Designation (EN)', headers.get('Designation', 12)), {'DE': headers.get('Bezeichnung (DE)', headers.get('Bezeichnung', 11)), 'IT': headers.get('Designazione (IT)', headers.get('Designazione (IT)', 14)), 'FR': headers.get('Désignation (FR)', headers.get('Désignation (FR)', 13))}, 'Objekt.Bezeichnung/Designation')
@@ -802,7 +811,7 @@ class Validator:
                     if not related_document:
                         self.add_normalization(sheet_name, idx, 'Objekte.RelatedDocument (Document-ID)', related_document, 'Organisation', 'Empty RelatedDocument defaults to Organisation', 'default-related-document', True)
                     elif document_ids and related_document not in document_ids:
-                        self.add('error', 'unknown_related_document_id', f'Objekte.RelatedDocument (Document-ID) must reference an existing Dokumente.Document-ID. Got: {related_document}', sheet=sheet_name, row=idx)
+                        self.add('error', 'unknown_related_document_id', f'RelatedDocumentName (EN) must reference an existing Documents.DocumentName (EN). Got: {related_document}', sheet=sheet_name, row=idx)
                     if ifc_obj and (not self._extract_base_ifc_entity(ifc_obj) or (ifc_uri_set and f'https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/{self._extract_base_ifc_entity(ifc_obj)}' not in ifc_uri_set)):
                         self.add('error', 'invalid_ifc_object_entity', f'IfcObject Entity must be a valid IFC entity. Got: {ifc_obj}', sheet=sheet_name, row=idx)
                     if ifc_type and (not self._extract_base_ifc_entity(ifc_type) or (ifc_uri_set and f'https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/{self._extract_base_ifc_entity(ifc_type)}' not in ifc_uri_set)):
@@ -863,7 +872,7 @@ class Validator:
                     prop_en = self._cell(row, headers.get('Designation (EN)', headers.get('Property', 8)))
                     data_type = self._cell(row, headers.get('DataType\n(Base Type)', 13))
                     data_type_ifc = self._cell(row, headers.get('DataType\n(IFC)', 14))
-                    value_list_id = self._cell(row, headers.get('Values.Enumeration-ID', headers.get('Werteliste-ID', 17)))
+                    value_list_id = self._cell(row, headers.get('EnumerationDesignation (EN)', headers.get('Properties.EnumerationDesignation (EN)', headers.get('Values.Enumeration-ID', headers.get('Werteliste-ID', 17)))) )
                     value_list = None
                     ifc_property_uri = self._cell(row, headers.get('IFC_URI', headers.get('GUID/URI_1', 19)))
                     ifc_pset = self._cell(row, headers.get('IfcPropertySet (Pset)\nIfcQuantitySet (Qto)', 20))
@@ -957,9 +966,9 @@ class Validator:
             expected_value_list_id = f"{self.slugify(prop_en or merkmal).replace('-', '_')}_enum" if (prop_en or merkmal) else None
             if value_list_id:
                 if expected_value_list_id and value_list_id != expected_value_list_id:
-                    self.add('warning', 'noncanonical_value_list_id', f'Werteliste-ID is present but differs from canonical generated form {expected_value_list_id}', sheet=sheet_name, row=idx)
+                    self.add('warning', 'noncanonical_value_list_id', f'EnumerationDesignation (EN) is present but differs from canonical Values.Designation (EN) expectation {expected_value_list_id}', sheet=sheet_name, row=idx)
             elif value_list or ((self.is_v20260619_template() or self.is_abgeglichen_template()) and value_ids):
-                self.add('warning', 'missing_value_list_id', f'Werteliste-ID is missing; derivable generated ID: {expected_value_list_id}', sheet=sheet_name, row=idx)
+                self.add('warning', 'missing_value_list_id', f'EnumerationDesignation (EN) is missing; expected matching Values.Designation (EN) would derive to {expected_value_list_id}', sheet=sheet_name, row=idx)
                 if expected_value_list_id:
                     self.add_normalization(sheet_name, idx, 'Werteliste-ID', value_list_id, expected_value_list_id, 'Missing Werteliste-ID is derivable from Property/Merkmal', 'derived-enumeration-id', True)
             if value_list:

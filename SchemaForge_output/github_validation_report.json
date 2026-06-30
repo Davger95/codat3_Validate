@@ -1,13 +1,46 @@
 {
   "workbook": "/home/Dave/.openclaw/workspace-datadict/P_workspace_codat3_validator/templates/Strukturvorlage_DataDictionary_v2_empty.xlsx",
   "summary": {
-    "parser_valid": true,
-    "pipeline_valid": true,
-    "governance_valid": true,
-    "errors": 0,
+    "parser_valid": false,
+    "pipeline_valid": false,
+    "governance_valid": false,
+    "errors": 4,
     "warnings": 0,
     "normalizations": 0
   },
-  "findings": [],
+  "findings": [
+    {
+      "level": "error",
+      "code": "missing_dictionary_field",
+      "message": "Missing required Header value: OrganizationCode. Use a short lowercase code, max 7 characters.",
+      "sheet": "Header",
+      "cell": null,
+      "row": 4
+    },
+    {
+      "level": "error",
+      "code": "missing_dictionary_field",
+      "message": "Missing required Header value: DictionaryName (EN). Also fill at least one local DictionaryName in DE, FR, or IT.",
+      "sheet": "Header",
+      "cell": null,
+      "row": 8
+    },
+    {
+      "level": "error",
+      "code": "missing_dictionary_field",
+      "message": "Missing required Header value: DictionaryVersion. Use semantic versioning like 1.0.0.",
+      "sheet": "Header",
+      "cell": null,
+      "row": 9
+    },
+    {
+      "level": "error",
+      "code": "missing_dictionary_field",
+      "message": "Missing required Header value: LifecycleStatus. Choose one of the allowed status values.",
+      "sheet": "Header",
+      "cell": null,
+      "row": 13
+    }
+  ],
   "normalizations": []
 }
