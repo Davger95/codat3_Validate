@@ -19,25 +19,25 @@
   - Ort: Sheet: `Header`, Row: `4`
   - Bedeutung: Der Validator hat ein Problem gefunden, das geprüft werden sollte.
   - Empfohlene Korrektur: Öffnen Sie das referenzierte Sheet und die betroffene Row, prüfen Sie den Wert und korrigieren Sie ihn gemäss der Workbook-Guidance.
-  - Technisches Detail: `missing_dictionary_field` — Missing required Header value: OrganizationCode. Use a short lowercase code, max 7 characters.
+  - Technisches Detail: `missing_dictionary_field` — Erforderlicher Header-Wert fehlt: OrganizationCode. Verwenden Sie einen kurzen Code in Kleinbuchstaben mit maximal 7 Zeichen.
 
 - **Missing dictionary field** (ERROR)
   - Ort: Sheet: `Header`, Row: `8`
   - Bedeutung: Der Validator hat ein Problem gefunden, das geprüft werden sollte.
   - Empfohlene Korrektur: Öffnen Sie das referenzierte Sheet und die betroffene Row, prüfen Sie den Wert und korrigieren Sie ihn gemäss der Workbook-Guidance.
-  - Technisches Detail: `missing_dictionary_field` — Missing required Header value: DictionaryName (EN). Also fill at least one local DictionaryName in DE, FR, or IT.
+  - Technisches Detail: `missing_dictionary_field` — Erforderlicher Header-Wert fehlt: DictionaryName (EN). Füllen Sie zusätzlich mindestens einen lokalen DictionaryName in DE, FR oder IT aus.
 
 - **Missing dictionary field** (ERROR)
   - Ort: Sheet: `Header`, Row: `9`
   - Bedeutung: Der Validator hat ein Problem gefunden, das geprüft werden sollte.
   - Empfohlene Korrektur: Öffnen Sie das referenzierte Sheet und die betroffene Row, prüfen Sie den Wert und korrigieren Sie ihn gemäss der Workbook-Guidance.
-  - Technisches Detail: `missing_dictionary_field` — Missing required Header value: DictionaryVersion. Use semantic versioning like 1.0.0.
+  - Technisches Detail: `missing_dictionary_field` — Erforderlicher Header-Wert fehlt: DictionaryVersion. Verwenden Sie Semantic Versioning wie 1.0.0.
 
 - **Missing dictionary field** (ERROR)
   - Ort: Sheet: `Header`, Row: `13`
   - Bedeutung: Der Validator hat ein Problem gefunden, das geprüft werden sollte.
   - Empfohlene Korrektur: Öffnen Sie das referenzierte Sheet und die betroffene Row, prüfen Sie den Wert und korrigieren Sie ihn gemäss der Workbook-Guidance.
-  - Technisches Detail: `missing_dictionary_field` — Missing required Header value: LifecycleStatus. Choose one of the allowed status values.
+  - Technisches Detail: `missing_dictionary_field` — Erforderlicher Header-Wert fehlt: LifecycleStatus. Wählen Sie einen der zulässigen Statuswerte aus.
 
 ## Normalisierungshinweise
 

@@ -12,7 +12,7 @@
     {
       "level": "error",
       "code": "missing_dictionary_field",
-      "message": "Missing required Header value: OrganizationCode. Use a short lowercase code, max 7 characters.",
+      "message": "Erforderlicher Header-Wert fehlt: OrganizationCode. Verwenden Sie einen kurzen Code in Kleinbuchstaben mit maximal 7 Zeichen.",
       "sheet": "Header",
       "cell": null,
       "row": 4
@@ -20,7 +20,7 @@
     {
       "level": "error",
       "code": "missing_dictionary_field",
-      "message": "Missing required Header value: DictionaryName (EN). Also fill at least one local DictionaryName in DE, FR, or IT.",
+      "message": "Erforderlicher Header-Wert fehlt: DictionaryName (EN). Füllen Sie zusätzlich mindestens einen lokalen DictionaryName in DE, FR oder IT aus.",
       "sheet": "Header",
       "cell": null,
       "row": 8
@@ -28,7 +28,7 @@
     {
       "level": "error",
       "code": "missing_dictionary_field",
-      "message": "Missing required Header value: DictionaryVersion. Use semantic versioning like 1.0.0.",
+      "message": "Erforderlicher Header-Wert fehlt: DictionaryVersion. Verwenden Sie Semantic Versioning wie 1.0.0.",
       "sheet": "Header",
       "cell": null,
       "row": 9
@@ -36,7 +36,7 @@
     {
       "level": "error",
       "code": "missing_dictionary_field",
-      "message": "Missing required Header value: LifecycleStatus. Choose one of the allowed status values.",
+      "message": "Erforderlicher Header-Wert fehlt: LifecycleStatus. Wählen Sie einen der zulässigen Statuswerte aus.",
       "sheet": "Header",
       "cell": null,
       "row": 13

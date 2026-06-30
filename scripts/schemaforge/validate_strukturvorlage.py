@@ -366,15 +366,15 @@ class Validator:
             value_row = core_rows.get(key)
             if not value_row or not value_row[0]:
                 if key == 'DictionaryName (EN)':
-                    self.add('error', 'missing_dictionary_field', 'Missing required Header value: DictionaryName (EN). Also fill at least one local DictionaryName in DE, FR, or IT.', sheet=core_sheet, row=value_row[1] if value_row else None)
+                    self.add('error', 'missing_dictionary_field', 'Erforderlicher Header-Wert fehlt: DictionaryName (EN). Füllen Sie zusätzlich mindestens einen lokalen DictionaryName in DE, FR oder IT aus.', sheet=core_sheet, row=value_row[1] if value_row else None)
                 elif key == 'OrganizationCode':
-                    self.add('error', 'missing_dictionary_field', 'Missing required Header value: OrganizationCode. Use a short lowercase code, max 7 characters.', sheet=core_sheet, row=value_row[1] if value_row else None)
+                    self.add('error', 'missing_dictionary_field', 'Erforderlicher Header-Wert fehlt: OrganizationCode. Verwenden Sie einen kurzen Code in Kleinbuchstaben mit maximal 7 Zeichen.', sheet=core_sheet, row=value_row[1] if value_row else None)
                 elif key == 'DictionaryVersion':
-                    self.add('error', 'missing_dictionary_field', 'Missing required Header value: DictionaryVersion. Use semantic versioning like 1.0.0.', sheet=core_sheet, row=value_row[1] if value_row else None)
+                    self.add('error', 'missing_dictionary_field', 'Erforderlicher Header-Wert fehlt: DictionaryVersion. Verwenden Sie Semantic Versioning wie 1.0.0.', sheet=core_sheet, row=value_row[1] if value_row else None)
                 elif key == 'LifecycleStatus':
-                    self.add('error', 'missing_dictionary_field', 'Missing required Header value: LifecycleStatus. Choose one of the allowed status values.', sheet=core_sheet, row=value_row[1] if value_row else None)
+                    self.add('error', 'missing_dictionary_field', 'Erforderlicher Header-Wert fehlt: LifecycleStatus. Wählen Sie einen der zulässigen Statuswerte aus.', sheet=core_sheet, row=value_row[1] if value_row else None)
                 else:
-                    self.add('error', 'missing_dictionary_field', f'Missing required Header value: {key}', sheet=core_sheet, row=value_row[1] if value_row else None)
+                    self.add('error', 'missing_dictionary_field', f'Erforderlicher Header-Wert fehlt: {key}', sheet=core_sheet, row=value_row[1] if value_row else None)
 
         org_code, org_row = core_rows.get('OrganizationCode', (None, None))
         if org_code and not re.match(r'^[a-z0-9-]{1,7}$', org_code):
