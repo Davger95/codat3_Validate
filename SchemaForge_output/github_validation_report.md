@@ -19,7 +19,7 @@
   - Ort: Sheet: `Header`, Row: `4`
   - Bedeutung: Der Validator hat ein Problem gefunden, das geprüft werden sollte.
   - Empfohlene Korrektur: Öffnen Sie das referenzierte Sheet und die betroffene Row, prüfen Sie den Wert und korrigieren Sie ihn gemäss der Workbook-Guidance.
-  - Technisches Detail: `missing_dictionary_field` — Erforderlicher Header-Wert fehlt: OrganizationCode. Verwenden Sie einen kurzen Code in Kleinbuchstaben mit maximal 7 Zeichen.
+  - Technisches Detail: `missing_dictionary_field` — Erforderlicher Header-Wert fehlt: OrganizationCode. Verwenden Sie einen kurzen Code in Kleinbuchstaben mit maximal 6 Zeichen.
 
 - **Missing dictionary field** (ERROR)
   - Ort: Sheet: `Header`, Row: `8`

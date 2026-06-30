@@ -12,7 +12,7 @@
     {
       "level": "error",
       "code": "missing_dictionary_field",
-      "message": "Erforderlicher Header-Wert fehlt: OrganizationCode. Verwenden Sie einen kurzen Code in Kleinbuchstaben mit maximal 7 Zeichen.",
+      "message": "Erforderlicher Header-Wert fehlt: OrganizationCode. Verwenden Sie einen kurzen Code in Kleinbuchstaben mit maximal 6 Zeichen.",
       "sheet": "Header",
       "cell": null,
       "row": 4

@@ -368,7 +368,7 @@ class Validator:
                 if key == 'DictionaryName (EN)':
                     self.add('error', 'missing_dictionary_field', 'Erforderlicher Header-Wert fehlt: DictionaryName (EN). Füllen Sie zusätzlich mindestens einen lokalen DictionaryName in DE, FR oder IT aus.', sheet=core_sheet, row=value_row[1] if value_row else None)
                 elif key == 'OrganizationCode':
-                    self.add('error', 'missing_dictionary_field', 'Erforderlicher Header-Wert fehlt: OrganizationCode. Verwenden Sie einen kurzen Code in Kleinbuchstaben mit maximal 7 Zeichen.', sheet=core_sheet, row=value_row[1] if value_row else None)
+                    self.add('error', 'missing_dictionary_field', 'Erforderlicher Header-Wert fehlt: OrganizationCode. Verwenden Sie einen kurzen Code in Kleinbuchstaben mit maximal 6 Zeichen.', sheet=core_sheet, row=value_row[1] if value_row else None)
                 elif key == 'DictionaryVersion':
                     self.add('error', 'missing_dictionary_field', 'Erforderlicher Header-Wert fehlt: DictionaryVersion. Verwenden Sie Semantic Versioning wie 1.0.0.', sheet=core_sheet, row=value_row[1] if value_row else None)
                 elif key == 'LifecycleStatus':
@@ -377,8 +377,8 @@ class Validator:
                     self.add('error', 'missing_dictionary_field', f'Erforderlicher Header-Wert fehlt: {key}', sheet=core_sheet, row=value_row[1] if value_row else None)
 
         org_code, org_row = core_rows.get('OrganizationCode', (None, None))
-        if org_code and not re.match(r'^[a-z0-9-]{1,7}$', org_code):
-            self.add('error', 'invalid_organization_code', 'OrganizationCode must be lowercase, max 7 characters, and contain no special characters except hyphen.', sheet=core_sheet, row=org_row)
+        if org_code and not re.match(r'^[a-z0-9-]{1,6}$', org_code):
+            self.add('error', 'invalid_organization_code', 'OrganizationCode must be lowercase, max 6 characters, and contain no special characters except hyphen.', sheet=core_sheet, row=org_row)
 
         name_en, name_en_row = core_rows.get('DictionaryName (EN)', (None, None))
         name_de, _ = core_rows.get('DictionaryName (DE)', (None, None))
@@ -648,8 +648,19 @@ class Validator:
                 if expected_prefix and not group_en.startswith(expected_prefix):
                     self.add('error', 'invalid_group_label_prefix', f'Designation (EN) must start with {expected_prefix}', sheet=group_sheet, row=idx)
                 suffix = group_en[len(expected_prefix):] if expected_prefix and group_en.startswith(expected_prefix) else group_en
-                if len(suffix) > 16:
-                    self.add('error', 'group_label_too_long', f'Designation (EN) name part after prefix must be max 16 characters, got {len(suffix)}.', sheet=group_sheet, row=idx)
+                if suffix.startswith(('Pset_', 'Qto_', 'Ifc_')):
+                    self.add('error', 'invalid_group_label_forbidden_prefix', 'Designation (EN) must not use the forbidden IFC prefixes Pset_, Qto_, or Ifc_.', sheet=group_sheet, row=idx)
+                if ' ' in suffix or '-' in suffix:
+                    self.add('warning', 'group_label_discouraged_separator', 'Designation (EN) should avoid spaces and hyphens and use connected ScopeTopic naming after the prefix.', sheet=group_sheet, row=idx)
+                if re.search(r'[^A-Za-z0-9_(),.]', suffix):
+                    self.add('error', 'group_label_invalid_characters', 'Designation (EN) contains characters outside the allowed convention. Allowed are ASCII letters, numbers, underscore, parentheses, commas, and periods.', sheet=group_sheet, row=idx)
+                if re.search(r'[À-ÿ]', suffix):
+                    self.add('warning', 'group_label_diacritics_discouraged', 'Designation (EN) should avoid diacritical characters and use ASCII-compatible spelling.', sheet=group_sheet, row=idx)
+                scope_topic_match = re.match(r'^([A-Z][a-z]{1,5})_([A-Z][A-Za-z0-9]{1,99})$', suffix)
+                if not scope_topic_match:
+                    self.add('error', 'invalid_group_label_structure', 'Designation (EN) must follow the convention <OrganizationCode>_<Scope>_<ScopeTopic> with Scope in Pascal-style short form (2-6 letters) and ScopeTopic starting with a capital letter and written without spaces.', sheet=group_sheet, row=idx)
+                if len(group_en) > 100:
+                    self.add('error', 'group_label_too_long', f'Designation (EN) should not exceed 100 characters, got {len(group_en)}.', sheet=group_sheet, row=idx)
                 expected_id = self.slugify(group_en)
                 if not group_id and expected_id:
                     self.add_normalization(group_sheet, idx, 'Merkmalsgruppe-ID', group_id, expected_id, 'System-generated ID derived from Designation (EN)', 'derived-group-id', True)
