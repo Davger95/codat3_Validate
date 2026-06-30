@@ -646,21 +646,21 @@ class Validator:
                 self.add('error', 'missing_group_label_en', 'Designation (EN) is required.', sheet=group_sheet, row=idx)
             else:
                 if expected_prefix and not group_en.startswith(expected_prefix):
-                    self.add('error', 'invalid_group_label_prefix', f'Designation (EN) must start with {expected_prefix}', sheet=group_sheet, row=idx)
+                    self.add('error', 'invalid_group_label_prefix', f"Designation (EN) entspricht nicht der Branchenkonvention. Der Name muss mit dem Präfix '{expected_prefix}' beginnen.", sheet=group_sheet, row=idx)
                 suffix = group_en[len(expected_prefix):] if expected_prefix and group_en.startswith(expected_prefix) else group_en
                 if suffix.startswith(('Pset_', 'Qto_', 'Ifc_')):
-                    self.add('error', 'invalid_group_label_forbidden_prefix', 'Designation (EN) must not use the forbidden IFC prefixes Pset_, Qto_, or Ifc_.', sheet=group_sheet, row=idx)
+                    self.add('error', 'invalid_group_label_forbidden_prefix', 'Designation (EN) entspricht nicht der Branchenkonvention. Die reservierten IFC-Präfixe Pset_, Qto_ und Ifc_ dürfen für GroupOfProperties nicht verwendet werden.', sheet=group_sheet, row=idx)
                 if ' ' in suffix or '-' in suffix:
-                    self.add('warning', 'group_label_discouraged_separator', 'Designation (EN) should avoid spaces and hyphens and use connected ScopeTopic naming after the prefix.', sheet=group_sheet, row=idx)
+                    self.add('warning', 'group_label_discouraged_separator', 'Designation (EN) sollte der Branchenkonvention folgen und nach dem Präfix keine Leerzeichen oder Bindestriche verwenden. Verwenden Sie stattdessen eine zusammenhängende ScopeTopic-Schreibweise.', sheet=group_sheet, row=idx)
                 if re.search(r'[^A-Za-z0-9_(),.]', suffix):
-                    self.add('error', 'group_label_invalid_characters', 'Designation (EN) contains characters outside the allowed convention. Allowed are ASCII letters, numbers, underscore, parentheses, commas, and periods.', sheet=group_sheet, row=idx)
+                    self.add('error', 'group_label_invalid_characters', 'Designation (EN) entspricht nicht der Branchenkonvention. Zulässig sind nur ASCII-Buchstaben, Zahlen, Unterstriche sowie Klammern, Kommas und Punkte.', sheet=group_sheet, row=idx)
                 if re.search(r'[À-ÿ]', suffix):
-                    self.add('warning', 'group_label_diacritics_discouraged', 'Designation (EN) should avoid diacritical characters and use ASCII-compatible spelling.', sheet=group_sheet, row=idx)
+                    self.add('warning', 'group_label_diacritics_discouraged', 'Designation (EN) sollte der Branchenkonvention folgend keine diakritischen Zeichen enthalten. Verwenden Sie eine ASCII-kompatible Schreibweise.', sheet=group_sheet, row=idx)
                 scope_topic_match = re.match(r'^([A-Z][a-z]{1,5})_([A-Z][A-Za-z0-9]{1,99})$', suffix)
                 if not scope_topic_match:
-                    self.add('error', 'invalid_group_label_structure', 'Designation (EN) must follow the convention <OrganizationCode>_<Scope>_<ScopeTopic> with Scope in Pascal-style short form (2-6 letters) and ScopeTopic starting with a capital letter and written without spaces.', sheet=group_sheet, row=idx)
+                    self.add('error', 'invalid_group_label_structure', 'Designation (EN) entspricht nicht der Branchenkonvention. Erwartet wird das Muster <OrganizationCode>_<Scope>_<ScopeTopic>, wobei <Scope> eine kurze fachliche Kategorie ist und <ScopeTopic> mit Grossbuchstaben beginnt und ohne Leerzeichen geschrieben wird.', sheet=group_sheet, row=idx)
                 if len(group_en) > 100:
-                    self.add('error', 'group_label_too_long', f'Designation (EN) should not exceed 100 characters, got {len(group_en)}.', sheet=group_sheet, row=idx)
+                    self.add('error', 'group_label_too_long', f'Designation (EN) entspricht nicht der Branchenkonvention. Der vollständige Name darf maximal 100 Zeichen lang sein, aktuell sind es {len(group_en)}.', sheet=group_sheet, row=idx)
                 expected_id = self.slugify(group_en)
                 if not group_id and expected_id:
                     self.add_normalization(group_sheet, idx, 'Merkmalsgruppe-ID', group_id, expected_id, 'System-generated ID derived from Designation (EN)', 'derived-group-id', True)
