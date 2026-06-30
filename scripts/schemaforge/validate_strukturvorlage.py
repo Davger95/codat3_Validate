@@ -358,10 +358,8 @@ class Validator:
 
         core_required = [
             'OrganizationCode',
-            'DictionaryCode',
-            'DictionaryName (DE)',
+            'DictionaryName (EN)',
             'DictionaryVersion',
-            'DictionaryUri',
             'LifecycleStatus',
         ]
         for key in core_required:
@@ -369,13 +367,42 @@ class Validator:
             if not value_row or not value_row[0]:
                 self.add('error', 'missing_dictionary_field', f'Missing required dictionary core value: {key}', sheet=core_sheet, row=value_row[1] if value_row else None)
 
+        org_code, org_row = core_rows.get('OrganizationCode', (None, None))
+        if org_code and not re.match(r'^[a-z0-9-]{1,7}$', org_code):
+            self.add('error', 'invalid_organization_code', 'OrganizationCode must be lowercase, max 7 characters, and contain no special characters except hyphen.', sheet=core_sheet, row=org_row)
+
+        name_en, name_en_row = core_rows.get('DictionaryName (EN)', (None, None))
+        name_de, _ = core_rows.get('DictionaryName (DE)', (None, None))
+        name_fr, _ = core_rows.get('DictionaryName (FR)', (None, None))
+        name_it, _ = core_rows.get('DictionaryName (IT)', (None, None))
+        if name_en and not any([name_de, name_fr, name_it]):
+            self.add('error', 'missing_required_local_translation', 'Header.DictionaryName requires DictionaryName (EN) plus at least one local language in DE/FR/IT.', sheet=core_sheet, row=name_en_row)
+
+        dictionary_code, code_row = core_rows.get('DictionaryCode', (None, None))
+        expected_code = self.slugify(name_en).replace('-', '_') if name_en else None
+        if expected_code and not dictionary_code:
+            self.add_normalization(core_sheet, code_row or name_en_row, 'DictionaryCode', dictionary_code, expected_code, 'System-generated DictionaryCode derived from DictionaryName (EN)', 'derived-dictionary-code', True)
+            dictionary_code = expected_code
+        elif dictionary_code and expected_code and dictionary_code != expected_code:
+            self.add('warning', 'system_generated_dictionary_code_override', f'DictionaryCode is a system-generated field. Manual value {dictionary_code} will be overwritten by generated value {expected_code}.', sheet=core_sheet, row=code_row)
+            self.add_normalization(core_sheet, code_row, 'DictionaryCode', dictionary_code, expected_code, 'Manual DictionaryCode overridden by system-generated value derived from DictionaryName (EN)', 'derived-dictionary-code', True)
+            dictionary_code = expected_code
+
         status = (core_rows.get('LifecycleStatus') or [None])[0]
         if status and status not in ALLOWED_LIFECYCLE:
             self.add('error', 'invalid_lifecycle', f'Invalid LifecycleStatus: {status}', sheet=core_sheet)
         version = (core_rows.get('DictionaryVersion') or [None])[0]
         if version and not SEMVER_RE.match(version):
             self.add('error', 'invalid_semver', f'DictionaryVersion must be semantic version, got: {version}', sheet=core_sheet)
-        uri = (core_rows.get('DictionaryUri') or [None])[0]
+
+        uri, uri_row = core_rows.get('DictionaryUri', (None, None))
+        expected_uri = None
+        if org_code and dictionary_code:
+            expected_uri = f'https://example.com/{org_code}/{dictionary_code}'
+            if not uri:
+                self.add_normalization(core_sheet, uri_row or code_row or org_row, 'DictionaryUri', uri, expected_uri, 'Derived DictionaryUri based on OrganizationCode and DictionaryCode', 'derived-dictionary-uri', True)
+            elif uri != expected_uri:
+                self.add('warning', 'noncanonical_dictionary_uri', f'DictionaryUri differs from the canonical derived URI {expected_uri}.', sheet=core_sheet, row=uri_row)
         if uri and not self.is_absolute_uri(uri):
             self.add('error', 'invalid_uri', f'DictionaryUri is not a valid absolute IRI: {uri}', sheet=core_sheet)
 
