@@ -39,14 +39,15 @@ REQUIRED_SHEETS_V20260619 = [
     'Data Template AreaMgmt',
 ]
 REQUIRED_SHEETS_ABGEGLICHEN = [
-    'Dictionary_core',
+    'Header',
     'Dictionary_public',
-    'Objekte',
-    'Merkmale',
-    'Werte',
-    'Dokumente',
-    'Merkmalgruppen',
+    'Classes',
+    'Properties',
+    'Values',
+    'Documents',
+    'GroupOfProperties',
     'Data_Template',
+    'Rules',
 ]
 OPTIONAL_SHEETS = ['ConceptRelation']
 ALLOWED_LIFECYCLE = {'Preview', 'Active', 'Inactive', 'Deprecated', 'Retired', 'Candidate', 'Recorded', 'Superseded', 'Incomplete'}
@@ -312,7 +313,7 @@ class Validator:
         return {'Objekte', 'Werte', 'Data Template AreaMgmt'}.issubset(set(self.wb.sheetnames)) and 'Merkmale' in self.wb.sheetnames
 
     def is_abgeglichen_template(self) -> bool:
-        return {'Dictionary_core', 'Dictionary_public', 'Objekte', 'Merkmale', 'Werte', 'Dokumente', 'Data_Template', 'Merkmalgruppen'}.issubset(set(self.wb.sheetnames))
+        return {'Header', 'Dictionary_public', 'Classes', 'Properties', 'Values', 'Documents', 'Data_Template', 'GroupOfProperties', 'Rules'}.issubset(set(self.wb.sheetnames))
 
     def validate_required_sheets(self):
         if self.is_abgeglichen_template():
@@ -334,7 +335,7 @@ class Validator:
             self.add('error', 'missing_sheet', f'Missing required sheet: {sheet}', sheet=sheet)
 
     def _dictionary_sheet_names(self) -> tuple[str | None, str | None]:
-        core = 'Dictionary_core' if 'Dictionary_core' in self.wb.sheetnames else ('Dictionary' if 'Dictionary' in self.wb.sheetnames else None)
+        core = 'Header' if 'Header' in self.wb.sheetnames else ('Dictionary_core' if 'Dictionary_core' in self.wb.sheetnames else ('Dictionary' if 'Dictionary' in self.wb.sheetnames else None))
         public = 'Dictionary_public' if 'Dictionary_public' in self.wb.sheetnames else None
         return core, public
 
@@ -386,11 +387,11 @@ class Validator:
             if primary_language and not re.match(r'^[a-z]{2}(?:-[A-Z]{2})?$', primary_language):
                 self.add('warning', 'invalid_primary_language_public', f'PrimaryLanguage in Dictionary_public should be ISO-like language tag (e.g. de or de-CH), got: {primary_language}', sheet=public_sheet)
             release_date = (public_rows.get('ReleaseDate') or [None])[0]
-            if release_date and not re.match(r'^\d{4}-\d{2}-\d{2}$', release_date):
-                self.add('warning', 'invalid_release_date_public', f'ReleaseDate in Dictionary_public should be YYYY-MM-DD, got: {release_date}', sheet=public_sheet)
+            if release_date and not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})$', release_date):
+                self.add('warning', 'invalid_release_date_public', f'ReleaseDate in Dictionary_public should be ISO 8601 date-time with timezone, e.g. 2026-06-18T15:30+02:00, got: {release_date}', sheet=public_sheet)
             modified_date = (public_rows.get('ModifiedDate') or [None])[0]
-            if modified_date and not re.match(r'^\d{4}-\d{2}-\d{2}$', modified_date):
-                self.add('warning', 'invalid_modified_date_public', f'ModifiedDate in Dictionary_public should be YYYY-MM-DD, got: {modified_date}', sheet=public_sheet)
+            if modified_date and not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})$', modified_date):
+                self.add('warning', 'invalid_modified_date_public', f'ModifiedDate in Dictionary_public should be ISO 8601 date-time with timezone, e.g. 2026-06-18T15:30+02:00, got: {modified_date}', sheet=public_sheet)
 
     def is_valid_bsdd_identifier_uri(self, value: str) -> bool:
         return any(value.startswith(prefix) for prefix in VALID_BSDD_URI_PREFIXES)
@@ -453,7 +454,7 @@ class Validator:
 
 
     def _load_dropdown_values(self, target_label: str) -> set[str]:
-        sheet_name = 'Dropdownregeln'
+        sheet_name = 'Rules'
         if sheet_name not in self.wb.sheetnames:
             return set()
         ws = self.wb[sheet_name]
@@ -493,24 +494,29 @@ class Validator:
         return collected
 
     def validate_wertekatalog(self):
-        if 'Werte' not in self.wb.sheetnames:
+        if 'Values' in self.wb.sheetnames:
+            ws = self.wb['Values']
+            value_sheet_name = 'Values'
+        elif 'Werte' in self.wb.sheetnames:
+            ws = self.wb['Werte']
+            value_sheet_name = 'Werte'
+        else:
             return
-        ws = self.wb['Werte']
         headers = self._header_index_map(ws, 3)
         seen_ids = set()
         for idx, row in self._iter_data_rows(ws, 10):
-            katalog_id = self._cell(row, headers.get('Werteliste-ID', headers.get('Werte-ID', 5)))
+            katalog_id = self._cell(row, headers.get('Enumeration-ID', headers.get('Werteliste-ID', headers.get('Werte-ID', 5))))
             label_de = self._cell(row, headers.get('Bezeichnung', 6))
             label_fr = self._cell(row, headers.get('Désignation (FR)', 7))
             label_it = self._cell(row, headers.get('Designazione (IT)', 8))
-            label_en = self._cell(row, headers.get('Label (EN)', 9))
-            values_en_raw = self._cell(row, headers.get('EnumerationValues\n(EN)', 10))
+            label_en = self._cell(row, headers.get('Designation (EN)', headers.get('Label (EN)', 9)))
+            values_en_raw = self._cell(row, headers.get('Enumeration (EN)', headers.get('EnumerationValues\n(EN)', 10)))
             values_de_raw = self._cell(row, headers.get('Werteliste\n(DE)', 11))
             values_fr_raw = self._cell(row, headers.get('Liste de valeurs\n(FR)', 12))
             values_it_raw = self._cell(row, headers.get('Lista valori\n(IT)', 13))
-            unit = self._cell(row, headers.get('Einheiten', 14))
+            unit = self._cell(row, headers.get('Units/Einheit/Unité/Unità', headers.get('Einheiten', 14)))
             status = self._cell(row, headers.get('Status', 16))
-            version_date = self._cell(row, headers.get('Versionsdatum', 17))
+            version_date = self._cell(row, headers.get('Version date', headers.get('Versionsdatum', 17)))
 
             if not any([katalog_id, label_de, label_fr, label_it, label_en, values_en_raw, values_de_raw, values_fr_raw, values_it_raw, unit, status, version_date]):
                 continue
@@ -557,11 +563,11 @@ class Validator:
 
             if status and status not in ALLOWED_LIFECYCLE:
                 self.add('error', 'invalid_value_catalog_status', f'Werte.Status must be one of the allowed lifecycle values, got: {status}', sheet='Werte', row=idx)
-            if version_date and not re.match(r'^\d{4}-\d{2}-\d{2}$', version_date):
-                self.add('error', 'invalid_value_catalog_version_date', f'Werte.Versionsdatum should be YYYY-MM-DD, got: {version_date}', sheet='Werte', row=idx)
+            if version_date and not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})$', version_date):
+                self.add('error', 'invalid_value_catalog_version_date', f'Werte.Versionsdatum should be ISO 8601 date-time with timezone, e.g. 2026-06-18T15:30+02:00, got: {version_date}', sheet='Werte', row=idx)
 
     def validate_merkmalsgruppenkatalog(self):
-        group_sheet = 'Merkmalgruppen' if 'Merkmalgruppen' in self.wb.sheetnames else ('Merkmalgruppen' if 'Merkmalgruppen' in self.wb.sheetnames else None)
+        group_sheet = 'GroupOfProperties' if 'GroupOfProperties' in self.wb.sheetnames else ('Merkmalgruppen' if 'Merkmalgruppen' in self.wb.sheetnames else None)
         if not group_sheet:
             return
         ws = self.wb[group_sheet]
@@ -575,8 +581,8 @@ class Validator:
         seen_codes = set()
         seen_labels = {}
         for idx, row in self._iter_data_rows(ws, 8):
-            group_id = self._cell(row, headers.get('Merkmalsgruppe-ID', 4))
-            group_code = self._cell(row, headers.get('Merkmalsgruppe-Code', 5))
+            group_id = self._cell(row, headers.get('GoP-ID', headers.get('Merkmalsgruppe-ID', 4)))
+            group_code = self._cell(row, headers.get('GoP-Code', headers.get('Merkmalsgruppe-Code', 5)))
             group_en = self._cell(row, headers.get('Designation (EN)', headers.get('Merkmalsgruppe (EN)', 6)))
             desc_en = self._cell(row, headers.get('Description (EN)', 7))
             label_de = self._cell(row, headers.get('Beschreibung (DE)', headers.get('Bezeichnung (DE)', 8)))
@@ -632,8 +638,8 @@ class Validator:
 
             if status and status not in ALLOWED_LIFECYCLE:
                 self.add('error', 'invalid_group_status', f'Merkmalgruppen.Status must be one of the allowed lifecycle values, got: {status}', sheet=group_sheet, row=idx)
-            if version_date and not re.match(r'^\d{4}-\d{2}-\d{2}$', version_date):
-                self.add('error', 'invalid_group_version_date', f'Merkmalgruppen.Versionsdatum should be YYYY-MM-DD, got: {version_date}', sheet=group_sheet, row=idx)
+            if version_date and not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})$', version_date):
+                self.add('error', 'invalid_group_version_date', f'Merkmalgruppen.Versionsdatum should be ISO 8601 date-time with timezone, e.g. 2026-06-18T15:30+02:00, got: {version_date}', sheet=group_sheet, row=idx)
         self._check_unique_labels(seen_labels, group_sheet, 'duplicate_group_label', 'Property-group label')
 
     def _check_unique_labels(self, registry: dict[str, list[tuple[str, int]]], sheet_name: str, error_code: str, label_name: str):
@@ -644,7 +650,7 @@ class Validator:
                     self.add('error', error_code, f'{label_name} must be unique within {sheet_name}. Duplicate label across multilingual reference fields: {norm_value} ({refs})', sheet=sheet_name, row=row)
 
     def validate_klassen(self):
-        sheet_name = 'Objekte' if ('Objekte' in self.wb.sheetnames and (self.is_v20260619_template() or self.is_abgeglichen_template())) else 'Klassen'
+        sheet_name = 'Classes' if ('Classes' in self.wb.sheetnames and self.is_abgeglichen_template()) else ('Objekte' if ('Objekte' in self.wb.sheetnames and (self.is_v20260619_template() or self.is_abgeglichen_template())) else 'Klassen')
         if sheet_name not in self.wb.sheetnames:
             return
         ws = self.wb[sheet_name]
@@ -675,20 +681,20 @@ class Validator:
                 final_name = None
             else:
                 if self.is_abgeglichen_template():
-                    obj_id = self._cell(row, headers.get('Objekt-ID', 9))
+                    obj_id = self._cell(row, headers.get('Class-ID', headers.get('Objekt-ID', 9)))
                     obj_einordnung = self._cell(row, headers.get('Objekt-Einordnung ', headers.get('Objekt-Einordnung', 10)))
                     bezeichnung = self._cell(row, headers.get('Bezeichnung (DE)', headers.get('Bezeichnung', 11)))
                     designation = self._cell(row, headers.get('Designation (EN)', headers.get('Designation', 12)))
                     beschreibung = self._cell(row, headers.get('Beschreibung (DE)', headers.get('Beschreibung', 15)))
                     description = self._cell(row, headers.get('Description (EN)', headers.get('Description', 16)))
-                    ifc_uri = self._cell(row, headers.get('Objekte.IFC_URI', headers.get('IFC_URI', headers.get('GUID/URI_1', 20))))
+                    ifc_uri = self._cell(row, headers.get('IFC_URI', headers.get('Objekte.IFC_URI', headers.get('GUID/URI_1', 20))))
                     ifc_obj = self._cell(row, headers.get('IfcObject Entity', 21))
                     ifc_type = self._cell(row, headers.get('IfcTypeObject Entity', 22))
                     predefined = self._cell(row, headers.get('PredefinedType', 23))
                     object_type = self._cell(row, headers.get('ObjectType', 24))
                     status = self._cell(row, headers.get('Status', 26))
-                    version_date = self._cell(row, headers.get('Versionsdatum', 27))
-                    source = self._cell(row, headers.get('Herkunft (PROV)', 28))
+                    version_date = self._cell(row, headers.get('Version date', headers.get('Versionsdatum', 27)))
+                    source = self._cell(row, headers.get('Provenance (PROV)', headers.get('Herkunft (PROV)', 28)))
                     related_document = self._cell(row, headers.get('Objekte.RelatedDocument (Document-ID)', headers.get('RelatedDocument (Document-ID)', headers.get('RelatedDocument', 30))))
                     identification = None
                     final_name = None
@@ -713,8 +719,8 @@ class Validator:
                         self.add('error', 'invalid_objekt_einordnung', f'Objekt-Einordnung must come from Dropdownregeln.Objekt-Einordnung. Got: {obj_einordnung}', sheet=sheet_name, row=idx)
                     if status and status_allowed and status not in status_allowed:
                         self.add('error', 'invalid_object_status', f'Objekte.Status must come from Dropdownregeln.Status. Got: {status}', sheet=sheet_name, row=idx)
-                    if version_date and not re.match(r'^\d{4}-\d{2}-\d{2}$', version_date):
-                        self.add('error', 'invalid_object_version_date', f'Objekte.Versionsdatum should be YYYY-MM-DD, got: {version_date}', sheet=sheet_name, row=idx)
+                    if version_date and not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})$', version_date):
+                        self.add('error', 'invalid_object_version_date', f'Objekte.Versionsdatum should be ISO 8601 date-time with timezone, e.g. 2026-06-18T15:30+02:00, got: {version_date}', sheet=sheet_name, row=idx)
                 else:
                     obj_id = self._cell(row, 7)
                     bezeichnung = self._cell(row, 9)
@@ -789,7 +795,7 @@ class Validator:
             self._check_unique_labels(seen_labels, sheet_name, 'duplicate_object_label', 'Object label')
 
     def validate_properties(self):
-        sheet_name = 'Merkmale' if self.is_abgeglichen_template() and 'Merkmale' in self.wb.sheetnames else 'Merkmale'
+        sheet_name = 'Properties' if self.is_abgeglichen_template() and 'Properties' in self.wb.sheetnames else 'Merkmale'
         if sheet_name not in self.wb.sheetnames:
             return
         ws = self.wb[sheet_name]
@@ -824,13 +830,13 @@ class Validator:
                 local_group = self._cell(row, 17)
             else:
                 if self.is_abgeglichen_template():
-                    prop_id = self._cell(row, headers.get('Merkmal-ID', 5))
-                    prop_code = prop_id or self._cell(row, headers.get('Merkmal-Code', 6))
+                    prop_id = self._cell(row, headers.get('Property-ID', headers.get('Merkmal-ID', 5)))
+                    prop_code = prop_id or self._cell(row, headers.get('Property-Code', headers.get('Merkmal-Code', 6)))
                     merkmal = self._cell(row, headers.get('Bezeichnung (DE)', headers.get('Merkmal', 7)))
                     prop_en = self._cell(row, headers.get('Designation (EN)', headers.get('Property', 8)))
                     data_type = self._cell(row, headers.get('DataType\n(Base Type)', 13))
                     data_type_ifc = self._cell(row, headers.get('DataType\n(IFC)', 14))
-                    value_list_id = self._cell(row, headers.get('Werteliste-ID', 17))
+                    value_list_id = self._cell(row, headers.get('Values.Enumeration-ID', headers.get('Werteliste-ID', 17)))
                     value_list = None
                     ifc_property_uri = self._cell(row, headers.get('IFC_URI', headers.get('GUID/URI_1', 19)))
                     ifc_pset = self._cell(row, headers.get('IfcPropertySet (Pset)\nIfcQuantitySet (Qto)', 20))
@@ -838,7 +844,7 @@ class Validator:
                     custom_pset = None
                     local_group = self._cell(row, 2)
                     status = self._cell(row, headers.get('Status', 28))
-                    version_date = self._cell(row, headers.get('Versionsdatum', 29))
+                    version_date = self._cell(row, headers.get('Version date', headers.get('Versionsdatum', 29)))
                     self._require_en_plus_one_local(row, idx, sheet_name, headers.get('Designation (EN)', headers.get('Property', 8)), {'DE': headers.get('Bezeichnung (DE)', headers.get('Merkmal', 7)), 'IT': headers.get('Designazione (IT)', headers.get('IT', 10)), 'FR': headers.get('Désignation (FR)', headers.get('FR', 9))}, 'Merkmale.Bezeichnung/Designation')
                     self._require_en_plus_one_local(row, idx, sheet_name, headers.get('Description (EN)', 12), {'DE': headers.get('Beschreibung (DE)', headers.get('Beschreibung', 11)), 'IT': headers.get('Descrizione (IT)', headers.get('Beschreibung (IT)', 14)), 'FR': headers.get('Description (FR)', headers.get('Beschreibung (FR)', 13))}, 'Merkmale.Beschreibung/Description')
                     label_fr = self._cell(row, headers.get('Désignation (FR)', headers.get('FR', 9)))
@@ -879,7 +885,7 @@ class Validator:
                 self.add('error', 'duplicate_property_code', f'Duplicate Merkmal-ID: {prop_code}', sheet=sheet_name, row=idx)
             else:
                 seen_codes.add(prop_code)
-            prop_short_code = self._cell(row, headers.get('Merkmal-Code', 6)) if self.is_abgeglichen_template() else None
+            prop_short_code = self._cell(row, headers.get('Property-Code', headers.get('Merkmal-Code', 6))) if self.is_abgeglichen_template() else None
             if prop_short_code:
                 if prop_short_code in seen_prop_short_codes:
                     self.add('error', 'duplicate_property_short_code', f'Duplicate Merkmal-Code: {prop_short_code}', sheet=sheet_name, row=idx)
@@ -895,7 +901,7 @@ class Validator:
                 self.add('error', 'invalid_data_type', f'Invalid DataType (Base Type): {data_type}', sheet=sheet_name, row=idx)
             if not data_type_ifc:
                 self.add('error', 'missing_ifc_data_type', 'Property row missing DataType (IFC)', sheet=sheet_name, row=idx)
-            unit_code = self._cell(row, headers.get('Einheit-Code', 21)) if self.is_abgeglichen_template() else None
+            unit_code = self._cell(row, headers.get('Units/Einheit/Unité/Unità', headers.get('Einheit-Code', 21))) if self.is_abgeglichen_template() else None
             unit_qudt = self._cell(row, headers.get('QUDT URI', 22)) if self.is_abgeglichen_template() else None
             unit_name_de = self._cell(row, headers.get('Einheit-Name (DE)', 24)) if self.is_abgeglichen_template() else None
             unit_name_fr = self._cell(row, headers.get('Nom de l’unité (FR)', headers.get('Einheit-Name (FR)', 25))) if self.is_abgeglichen_template() else None
@@ -936,8 +942,8 @@ class Validator:
             if self.is_abgeglichen_template():
                 if status and status not in ALLOWED_LIFECYCLE:
                     self.add('error', 'invalid_property_status', f'Merkmale.Status must be one of the allowed lifecycle values, got: {status}', sheet=sheet_name, row=idx)
-                if version_date and not re.match(r'^\d{4}-\d{2}-\d{2}$', version_date):
-                    self.add('error', 'invalid_property_version_date', f'Merkmale.Versionsdatum should be YYYY-MM-DD, got: {version_date}', sheet=sheet_name, row=idx)
+                if version_date and not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})$', version_date):
+                    self.add('error', 'invalid_property_version_date', f'Merkmale.Versionsdatum should be ISO 8601 date-time with timezone, e.g. 2026-06-18T15:30+02:00, got: {version_date}', sheet=sheet_name, row=idx)
             if unit_qudt:
                 if not self.is_absolute_uri(unit_qudt):
                     self.add('error', 'invalid_qudt_unit_uri', f'QUDT URI is not a valid absolute IRI: {unit_qudt}', sheet=sheet_name, row=idx)
@@ -971,7 +977,7 @@ class Validator:
     def validate_documents(self):
         dd = self.get_dd()
         docs = getattr(dd, 'documents', [])
-        sheet_name = 'Dokumente' if self.is_abgeglichen_template() and 'Dokumente' in self.wb.sheetnames else 'Dokumente'
+        sheet_name = 'Documents' if self.is_abgeglichen_template() and 'Documents' in self.wb.sheetnames else 'Dokumente'
         doc_start_row = 13
         if sheet_name == 'Dokumente':
             ws = self.wb[sheet_name]
@@ -1035,8 +1041,8 @@ class Validator:
                 seen_group_map[group_code] = group_label
             if status and status_allowed and status not in status_allowed:
                 self.add('error', 'invalid_document_status', f'Dokumente.Status must come from Dropdownregeln.Status. Got: {status}', sheet=sheet_name, row=i)
-            if version_date and not re.match(r'^\d{4}-\d{2}-\d{2}$', str(version_date).strip()):
-                self.add('error', 'invalid_document_version_date', f'Dokumente.Versionsdatum should be YYYY-MM-DD, got: {version_date}', sheet=sheet_name, row=i)
+            if version_date and not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})$', str(version_date).strip()):
+                self.add('error', 'invalid_document_version_date', f'Dokumente.Versionsdatum should be ISO 8601 date-time with timezone, e.g. 2026-06-18T15:30+02:00, got: {version_date}', sheet=sheet_name, row=i)
             doc_uri = doc.get('Dokument URI')
             if doc_uri and not self.is_absolute_uri(doc_uri):
                 self.add('error', 'invalid_document_uri', f'Dokument URI is invalid: {doc_uri}', sheet=sheet_name, row=i)
@@ -1110,7 +1116,7 @@ class Validator:
                     norm = self._norm(value)
                     if norm:
                         property_label_map[norm] = p.code
-            group_sheet = 'Merkmalgruppen' if 'Merkmalgruppen' in self.wb.sheetnames else ('Merkmalgruppen' if 'Merkmalgruppen' in self.wb.sheetnames else None)
+            group_sheet = 'GroupOfProperties' if 'GroupOfProperties' in self.wb.sheetnames else ('Merkmalgruppen' if 'Merkmalgruppen' in self.wb.sheetnames else None)
             group_label_map = {}
             if group_sheet:
                 gws = self.wb[group_sheet]

@@ -161,7 +161,9 @@ def _default_meta(path: Path) -> DictionaryMeta:
 
 
 def _parse_dictionary_if_present(wb, path: Path) -> DictionaryMeta:
-    if "Dictionary_core" in wb.sheetnames:
+    if "Header" in wb.sheetnames:
+        ws = wb["Header"]
+    elif "Dictionary_core" in wb.sheetnames:
         ws = wb["Dictionary_core"]
     elif "Dictionary" in wb.sheetnames:
         ws = wb["Dictionary"]
@@ -206,7 +208,7 @@ def _parse_classes(ws, meta: DictionaryMeta) -> list[DDClass]:
     classes = []
     for r in rows:
         designation = _str(r.get("Designation")) or _str(r.get("Bezeichnung")) or ""
-        source_objekt_id = _str(r.get("Objekt-ID"))
+        source_objekt_id = _str(r.get("Class-ID")) or _str(r.get("Objekt-ID"))
         bezeichnung = _str(r.get("Bezeichnung")) or ""
         beschreibung = _str(r.get("Beschreibung")) or _str(r.get("Description")) or ""
         if not any([source_objekt_id, designation, bezeichnung, beschreibung]):
@@ -340,13 +342,13 @@ def _parse_objects_v20260619(ws, meta: DictionaryMeta) -> list[DDClass]:
     classes = []
     for r in rows:
         if not any([
-            _str(r.get("Objekt-ID")),
+            _str(r.get("Class-ID")) or _str(r.get("Objekt-ID")),
             _str(r.get("Designation")),
             _str(r.get("Bezeichnung")),
             _str(r.get("Beschreibung")),
         ]):
             continue
-        code = _str(r.get("Objekt-ID")) or slugify(_str(r.get("Designation")) or _str(r.get("Bezeichnung")) or "")
+        code = _str(r.get("Class-ID")) or _str(r.get("Objekt-ID")) or slugify(_str(r.get("Designation")) or _str(r.get("Bezeichnung")) or "")
         if not code:
             continue
         cls = DDClass(
@@ -361,7 +363,7 @@ def _parse_objects_v20260619(ws, meta: DictionaryMeta) -> list[DDClass]:
             parent_class_code=_str(r.get("Objekt-Einordnung ")) or _str(r.get("Objekt-Einordnung")),
             ifc_entity_code=_str(r.get("IfcObject Entity")),
             ifc_predefined_type=None,
-            ifc_uri=_str(r.get("Objekte.IFC_URI")) or _str(r.get("IFC_URI")) or _str(r.get("GUID/URI_1")) or _str(r.get("IFC URI")),
+            ifc_uri=_str(r.get("IFC_URI")) or _str(r.get("Objekte.IFC_URI")) or _str(r.get("IFC_URI")) or _str(r.get("GUID/URI_1")) or _str(r.get("IFC URI")),
             rds_reference=None,
             crb_code=None,
             status="Preview",
@@ -389,9 +391,9 @@ def _parse_properties_v20260619(ws, value_ws, meta: DictionaryMeta) -> tuple[lis
         code = _str(r.get("Merkmal-ID"))
         if not code:
             continue
-        value_list_id = _str(r.get("Werteliste-ID"))
+        value_list_id = _str(r.get("Values.Enumeration-ID")) or _str(r.get("Werteliste-ID"))
         value_row = value_map.get(value_list_id or "")
-        enum_values_raw = _str(value_row.get("EnumerationValues\n(EN)")) if value_row else None
+        enum_values_raw = _str(value_row.get("Enumeration (EN)")) or _str(value_row.get("EnumerationValues\n(EN)")) if value_row else None
         vals = _split_values(enum_values_raw)
         prop = DDProperty(
             code=code,
@@ -404,9 +406,9 @@ def _parse_properties_v20260619(ws, value_ws, meta: DictionaryMeta) -> tuple[lis
             data_type=_str(r.get("DataType\n(Base Type)")) or "STRING",
             data_type_ifc=_str(r.get("DataType\n(IFC)")),
             property_value_kind=_infer_property_value_kind(vals),
-            unit_label=_str(value_row.get("Einheiten")) if value_row else None,
+            unit_label=_str(value_row.get("Units/Einheit/Unité/Unità")) or _str(value_row.get("Einheiten")) if value_row else None,
             enumeration_values=",".join(vals) if vals else None,
-            ifc_property_uri=_str(r.get("GUID/URI_1")),
+            ifc_property_uri=_str(r.get("IFC_URI")) or _str(r.get("GUID/URI_1")),
             ifc_pset_uri=_str(r.get("IfcPropertySet (Pset)")),
             property_set_name=_str(r.get("Benutzerdefiniertes PropertySet")) or _str(r.get("Governance (Merkmale)")),
             rds_reference=_str(r.get("Hinweise zur Handhabung")),
@@ -507,8 +509,8 @@ def load_he_dd_v20260619(path: Path) -> DataDictionary:
         "DictionaryCode": "DD_FM",
         "OrganizationCode": meta.org_code or "bdch",
     })
-    classes = _parse_objects_v20260619(wb["Objekte"], meta)
-    properties, allowed_values = _parse_properties_v20260619(wb["Merkmale_Merkmalsgruppen"], wb["Werte"], meta)
+    classes = _parse_objects_v20260619(wb["Classes"], meta)
+    properties, allowed_values = _parse_properties_v20260619(wb["Merkmale_Merkmalsgruppen"], wb["Values"], meta)
     class_properties = _parse_matrix_v20260619(wb["Data Template AreaMgmt"], properties)
     dd = DataDictionary(
         source_file=path,
@@ -528,7 +530,7 @@ def _parse_objects_abgeglichen(ws, meta: DictionaryMeta) -> list[DDClass]:
     base = f"{_lindas_base(meta)}class/"
     classes = []
     for r in rows:
-        code = _str(r.get("Objekt-ID"))
+        code = _str(r.get("Class-ID")) or _str(r.get("Objekt-ID"))
         if not code:
             continue
         cls = DDClass(
@@ -543,11 +545,11 @@ def _parse_objects_abgeglichen(ws, meta: DictionaryMeta) -> list[DDClass]:
             parent_class_code=_str(r.get("Objekt-Einordnung ")) or _str(r.get("Objekt-Einordnung")),
             ifc_entity_code=_normalize_ifc_entity(_str(r.get("IfcObject Entity")), _str(r.get("PredefinedType"))),
             ifc_predefined_type=_str(r.get("PredefinedType")),
-            ifc_uri=_str(r.get("Objekte.IFC_URI")) or _str(r.get("IFC_URI")) or _str(r.get("GUID/URI_1")) or _str(r.get("IFC URI")),
+            ifc_uri=_str(r.get("IFC_URI")) or _str(r.get("Objekte.IFC_URI")) or _str(r.get("IFC_URI")) or _str(r.get("GUID/URI_1")) or _str(r.get("IFC URI")),
             rds_reference=_str(r.get("Klassifikationen")),
             crb_code=None,
             status=_str(r.get("Status")) or "Preview",
-            document_reference=_str(r.get("Herkunft (PROV)")),
+            document_reference=_str(r.get("Provenance (PROV)")) or _str(r.get("Herkunft (PROV)")),
             countries_of_use="CH",
         )
         setattr(cls, "name_it", _str(r.get("Designazione (IT)")) or _str(r.get("IT")) or "")
@@ -574,12 +576,12 @@ def _parse_properties_abgeglichen(ws, value_ws, meta: DictionaryMeta) -> tuple[l
     props = []
     avs = []
     for r in rows:
-        code = _str(r.get("Merkmal-ID")) or _str(r.get("Merkmal-Code"))
+        code = _str(r.get("Property-ID")) or _str(r.get("Merkmal-ID")) or _str(r.get("Property-Code")) or _str(r.get("Merkmal-Code"))
         if not code:
             continue
-        value_list_id = _str(r.get("Werteliste-ID"))
+        value_list_id = _str(r.get("Values.Enumeration-ID")) or _str(r.get("Werteliste-ID"))
         value_row = value_map.get(value_list_id or "")
-        enum_values_raw = _str(value_row.get("EnumerationValues\n(EN)")) if value_row else None
+        enum_values_raw = _str(value_row.get("Enumeration (EN)")) or _str(value_row.get("EnumerationValues\n(EN)")) if value_row else None
         if not enum_values_raw and value_row:
             enum_values_raw = _str(value_row.get("Werteliste\n(DE)")) or _str(value_row.get("Lista valori\n(IT)")) or _str(value_row.get("Liste de valeurs\n(FR)"))
         vals = _split_values(enum_values_raw)
@@ -594,9 +596,9 @@ def _parse_properties_abgeglichen(ws, value_ws, meta: DictionaryMeta) -> tuple[l
             data_type=_str(r.get("DataType\n(Base Type)")) or "STRING",
             data_type_ifc=_str(r.get("DataType\n(IFC)")),
             property_value_kind=_infer_property_value_kind(vals),
-            unit_label=_str(value_row.get("Einheiten")) if value_row else None,
+            unit_label=_str(value_row.get("Units/Einheit/Unité/Unità")) or _str(value_row.get("Einheiten")) if value_row else None,
             enumeration_values=",".join(vals) if vals else None,
-            ifc_property_uri=_str(r.get("GUID/URI_1")),
+            ifc_property_uri=_str(r.get("IFC_URI")) or _str(r.get("GUID/URI_1")),
             ifc_pset_uri=_str(r.get("IfcPropertySet (Pset)\nIfcQuantitySet (Qto)")),
             property_set_name=None,
             rds_reference=None,
@@ -730,9 +732,9 @@ def load_he_dd_abgeglichen(path: Path) -> DataDictionary:
         "DictionaryCode": slugify(path.stem).upper().replace('-', '_'),
         "OrganizationCode": meta.org_code or "bdch",
     })
-    classes = _parse_objects_abgeglichen(wb["Objekte"], meta)
-    properties, allowed_values = _parse_properties_abgeglichen(wb["Merkmale"], wb["Werte"], meta)
-    group_sheet = "Merkmalgruppen" if "Merkmalgruppen" in wb.sheetnames else None
+    classes = _parse_objects_abgeglichen(wb["Classes"], meta)
+    properties, allowed_values = _parse_properties_abgeglichen(wb["Properties"], wb["Values"], meta)
+    group_sheet = "GroupOfProperties" if "GroupOfProperties" in wb.sheetnames else ("Merkmalgruppen" if "Merkmalgruppen" in wb.sheetnames else None)
     group_refs = _parse_merkmalsgruppen_abgeglichen(wb[group_sheet]) if group_sheet else set()
     class_properties = _parse_matrix_abgeglichen(wb["Data_Template"], properties, group_refs)
     dd = DataDictionary(
@@ -744,7 +746,7 @@ def load_he_dd_abgeglichen(path: Path) -> DataDictionary:
         allowed_values=allowed_values,
         concept_relations=[],
     )
-    setattr(dd, "documents", _parse_documents_abgeglichen(wb["Dokumente"], meta))
+    setattr(dd, "documents", _parse_documents_abgeglichen(wb["Documents"], meta))
     return dd
 
 
@@ -798,7 +800,7 @@ def load_he_dd_v01(path: Path) -> DataDictionary:
     path = Path(path)
     wb = openpyxl.load_workbook(path, data_only=True)
 
-    if {"Objekte", "Merkmale", "Werte", "Dokumente", "Data_Template", "Dictionary_core", "Dictionary_public"}.issubset(set(wb.sheetnames)) and {"Merkmalgruppen"}.issubset(set(wb.sheetnames)):
+    if {"Classes", "Properties", "Values", "Documents", "Data_Template", "Header", "Dictionary_public", "GroupOfProperties", "Rules"}.issubset(set(wb.sheetnames)):
         return load_he_dd_abgeglichen(path)
 
     if {"Objekte", "Werte", "Data Template AreaMgmt", "Dokumente_Dokumentgruppen"}.issubset(set(wb.sheetnames)):

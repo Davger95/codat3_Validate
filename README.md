@@ -1,26 +1,42 @@
 # Data Dictionary Validierungs-MVP
 
-Dieses Repository stellt eine Excel-Vorlage und eine GitHub-basierte Validierung für Data Dictionaries bereit.
+Dieses Repository stellt die **öffentliche Excel-Vorlage** und die **GitHub-basierte Validierung** für ausgefüllte Data Dictionaries bereit.
 
 ## Kanonische Vorlage
 
-- `templates/Strukturvorlage_DataDictionary_empty.xlsx`
+- `templates/Strukturvorlage_DataDictionary_v2_empty.xlsx`
 
-Diese leere Vorlage ist der Startpunkt für Nutzerinnen und Nutzer.
+Diese Datei ist die einzige kanonische öffentliche Vorlage.
 
-## Typischer Nutzer-Workflow
+## Öffentlicher Nutzer-Workflow
 
 1. Vorlage herunterladen
-2. Eigene Data-Dictionary-Inhalte eintragen
-3. Datei in einen GitHub-Branch hochladen oder committen
-4. GitHub Action **Validate Data Dictionary** starten
-5. Validierungsbericht als Artefakt und in der Job-Zusammenfassung prüfen
+2. Vorlage ausfüllen
+3. Ausgefüllte `.xlsx` in das Repository hochladen oder committen
+4. GitHub Action **Validate Data Dictionary** manuell starten und bei Bedarf `workbook_path` auf die eigene Datei setzen
+5. Validierungsbericht als Artefakt herunterladen und lesen
 
-## Wichtiger Hinweis
+## Öffentliche Blattnamen der Vorlage
 
-Die leere Vorlage ist absichtlich noch **nicht vollständig ausgefüllt**. Wenn sie unverändert validiert wird, sind Fehler für fehlende Mindestangaben – insbesondere in `Dictionary_core` – korrekt und gewünscht.
+Die Vorlage arbeitet im MVP mit diesen öffentlichen Blattnamen:
 
-## Ausserhalb des aktuellen MVP
+- `Header`
+- `Classes`
+- `Properties`
+- `Values`
+- `Documents`
+- `GroupOfProperties`
+- `Rules`
+- `Data_Template`
+
+## Wichtiger Hinweis zum MVP
+
+Der öffentliche MVP ist auf die **Validierung von ausgefüllten Arbeitsmappen** ausgelegt.
+
+- Die Validierung einer ausgefüllten Arbeitsmappe ist der eigentliche Nutzer-Workflow.
+- Die Validierung der leeren Vorlage ist nur der **Standard-Smoke-Test** der GitHub Action.
+
+## Ausserhalb des aktuellen öffentlichen MVP
 
 Nicht Teil dieses öffentlichen MVP sind derzeit:
 

@@ -1,6 +1,6 @@
 # Data Dictionary Validation Report
 
-**Workbook:** `/home/Dave/.openclaw/workspace-datadict/templates/Strukturvorlage Datenkataloge_Abgeglichen_v2__empty.xlsx`
+**Workbook:** `/home/Dave/.openclaw/workspace-datadict/P_workspace_codat3_validator/templates/Strukturvorlage_DataDictionary_v2_empty.xlsx`
 
 ## Gesamtergebnis
 

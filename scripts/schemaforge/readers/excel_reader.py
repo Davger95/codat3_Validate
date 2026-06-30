@@ -348,7 +348,7 @@ def load_dd(path: Path) -> DataDictionary:
     path = Path(path)
     wb = openpyxl.load_workbook(path)
 
-    if {"Klassen", "Merkmale_Merkmalsgruppen", "Dokumente_Dokumentgruppen", "KlassenMerkmal"}.issubset(set(wb.sheetnames)) or {"Objekte", "Merkmale_Merkmalsgruppen", "Werte", "Data Template AreaMgmt", "Dokumente_Dokumentgruppen"}.issubset(set(wb.sheetnames)) or ({"Objekte", "Merkmale", "Werte", "Dokumente", "Data_Template", "Dictionary_core", "Dictionary_public"}.issubset(set(wb.sheetnames)) and ("Merkmalgruppen" in wb.sheetnames)):
+    if {"Klassen", "Merkmale_Merkmalsgruppen", "Dokumente_Dokumentgruppen", "KlassenMerkmal"}.issubset(set(wb.sheetnames)) or {"Objekte", "Merkmale_Merkmalsgruppen", "Werte", "Data Template AreaMgmt", "Dokumente_Dokumentgruppen"}.issubset(set(wb.sheetnames)) or ({"Objekte", "Merkmale", "Werte", "Dokumente", "Data_Template", "Dictionary_core", "Dictionary_public"}.issubset(set(wb.sheetnames)) and ("Merkmalgruppen" in wb.sheetnames)) or ({"Classes", "Properties", "Values", "Documents", "Data_Template", "Header", "Dictionary_public", "GroupOfProperties", "Rules"}.issubset(set(wb.sheetnames))):
         from .he_dd_v01_reader import load_he_dd_v01
         return load_he_dd_v01(path)
 
@@ -359,8 +359,8 @@ def load_dd(path: Path) -> DataDictionary:
             tab6_name = candidate
             break
 
-    dictionary_sheet = "Dictionary_core" if "Dictionary_core" in wb.sheetnames else "Dictionary"
-    if {"Objekte", "Merkmale", "Werte", "Dokumente", "Data_Template", "Dictionary_core", "Dictionary_public"}.issubset(set(wb.sheetnames)) and ("Merkmalgruppen" in wb.sheetnames):
+    dictionary_sheet = "Header" if "Header" in wb.sheetnames else ("Dictionary_core" if "Dictionary_core" in wb.sheetnames else "Dictionary")
+    if ({"Objekte", "Merkmale", "Werte", "Dokumente", "Data_Template", "Dictionary_core", "Dictionary_public"}.issubset(set(wb.sheetnames)) and ("Merkmalgruppen" in wb.sheetnames)) or ({"Classes", "Properties", "Values", "Documents", "Data_Template", "Header", "Dictionary_public", "GroupOfProperties", "Rules"}.issubset(set(wb.sheetnames))):
         from .he_dd_v01_reader import load_he_dd_v01
         return load_he_dd_v01(path)
     dd = DataDictionary(

@@ -1,20 +1,43 @@
 # GitHub-Validierung
 
-## Standardpfad
+## Standardpfad der GitHub Action
 
-Die GitHub Action validiert standardmässig:
+Die GitHub Action verwendet standardmässig:
 
-- `templates/Strukturvorlage_DataDictionary_empty.xlsx`
+- `templates/Strukturvorlage_DataDictionary_v2_empty.xlsx`
 
-## Eigene Arbeitsmappe validieren
+Dieser Standardpfad dient nur als **Smoke-Test** für die kanonische leere Vorlage.
 
-1. `.xlsx`-Datei in einen Branch hochladen oder committen
-2. Workflow **Validate Data Dictionary** starten
-3. Optional `workbook_path` auf den relativen Pfad der eigenen Datei setzen
-4. Bericht und Artefakte herunterladen
+## Empfohlener Nutzer-Workflow
+
+1. Vorlage herunterladen
+2. Vorlage ausfüllen
+3. Ausgefüllte `.xlsx` in einen Branch hochladen oder committen
+4. Workflow **Validate Data Dictionary** manuell starten
+5. Optional `workbook_path` auf den relativen Pfad der eigenen Datei setzen
+6. Validierungsbericht und Artefakte herunterladen und lesen
+
+## Öffentliche Blattnamen
+
+Die öffentliche Vorlage und die Validierung erwarten im MVP diese Blattnamen:
+
+- `Header`
+- `Classes`
+- `Properties`
+- `Values`
+- `Documents`
+- `GroupOfProperties`
+- `Rules`
+- `Data_Template`
 
 ## Aktueller Geltungsbereich
 
-Die öffentliche Branch-Version deckt die Validierung von Data Dictionaries ab.
+Der öffentliche MVP deckt die **Validierung von ausgefüllten Arbeitsmappen** ab.
 
-Export- und Publikationspfade (RDF, bSDD, i14y, LINDAS) sind bewusst nicht Teil dieses MVP.
+Nicht Teil dieses öffentlichen MVP sind:
+
+- RDF-Export
+- bSDD-Publikation
+- i14y-Publikation
+- LINDAS-Publikation
+- sonstige Export-/Publishing-Pipelines
