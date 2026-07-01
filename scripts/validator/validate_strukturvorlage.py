@@ -1262,7 +1262,11 @@ class Validator:
                             group_label_map[norm] = val
             row2_headers = {self._norm(ws.cell(2, c).value): c for c in range(1, ws.max_column + 1) if self._norm(ws.cell(2, c).value)}
             property_anchor = row2_headers.get(self._norm('Property - Designation/Bezeichnung/Désignation/Designazione'))
-            document_anchor = row2_headers.get(self._norm('Document - Designation/Bezeichnung/Désignation/Designazione'))
+            document_anchor = (
+                row2_headers.get(self._norm('Document - Designation/Bezeichnung/Désignation/Designazione'))
+                or row2_headers.get(self._norm('Dokumente - Bezeichnung/Designation'))
+                or row2_headers.get(self._norm('DocumentName (EN)'))
+            )
             if not property_anchor:
                 property_anchor = 5
             property_start_col = property_anchor + 1
