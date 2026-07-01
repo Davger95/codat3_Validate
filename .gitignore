@@ -1,4 +1,4 @@
-SchemaForge_output/*
+Validation_output/*
 __pycache__/
 *.pyc
 scripts/schemaforge/

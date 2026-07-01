@@ -1,4 +1,4 @@
-# GitHub-Validierung
+# Validierung mit GitHub Actions
 
 ## Standardpfad der GitHub Action
 
@@ -29,6 +29,14 @@ Die öffentliche Vorlage und die Validierung erwarten im MVP diese Blattnamen:
 - `GroupOfProperties`
 - `Rules`
 - `Data_Template`
+
+## Wo die Berichte landen
+
+Die Validierung erzeugt Berichte unter:
+
+- `Validation_output/`
+
+In GitHub Actions werden diese Berichte zusätzlich als Artefakte hochgeladen.
 
 ## Aktueller Geltungsbereich
 

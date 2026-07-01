@@ -10,7 +10,7 @@ from pathlib import Path
 # ── Base paths ────────────────────────────────────────────────────────────────
 WORKSPACE = Path(__file__).resolve().parents[2]
 SHEMAFORGE_DIR = WORKSPACE / "HE_SEM_shemaforge"
-OUTPUT_DIR = WORKSPACE / "SchemaForge_output"
+OUTPUT_DIR = WORKSPACE / "Validation_output"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 # ── Input files ───────────────────────────────────────────────────────────────

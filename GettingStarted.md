@@ -33,7 +33,7 @@ Die wichtigsten Bereiche sind:
   diese Onboarding-Anleitung
 - `docs/validierungslogik.md`  
   fachliche Erklärung der Validierungslogik
-- `docs/github-validation-wrapper.md`  
+- `docs/validierung-mit-github-actions.md`  
   Erklärung des GitHub-Validierungsablaufs
 - `templates/Strukturvorlage_DataDictionary_v2_empty.xlsx`  
   kanonische leere Vorlage
@@ -96,7 +96,7 @@ Für den Alltag sind diese Dateien besonders wichtig:
 
 - `README.md`
 - `docs/validierungslogik.md`
-- `docs/github-validation-wrapper.md`
+- `docs/validierung-mit-github-actions.md`
 
 ## 10. Mit dem Beispiel vergleichen
 

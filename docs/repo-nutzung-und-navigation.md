@@ -18,7 +18,7 @@ Es soll Benutzern helfen,
 1. `GettingStarted.md`
 2. `README.md`
 3. `docs/validierungslogik.md`
-4. `docs/github-validation-wrapper.md`
+4. `docs/validierung-mit-github-actions.md`
 
 ## Wichtigste Dateien
 
@@ -41,7 +41,7 @@ Es soll Benutzern helfen,
 
 - `.github/workflows/validate-data-dictionary.yml`
 - `scripts/validator/run_github_validation.py`
-- `docs/github-validation-wrapper.md`
+- `docs/validierung-mit-github-actions.md`
 
 ## Was Benutzer im Normalfall nicht anfassen müssen
 

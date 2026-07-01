@@ -62,6 +62,6 @@ jobs:
         with:
           name: validation-report
           path: |
-            SchemaForge_output/github_validation_report.json
-            SchemaForge_output/github_validation_report.md
-            SchemaForge_output/github_validation_summary.json
+            Validation_output/github_validation_report.json
+            Validation_output/github_validation_report.md
+            Validation_output/github_validation_summary.json

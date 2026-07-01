@@ -58,7 +58,7 @@ def main(argv=None):
 
     from validator import validate_strukturvorlage as validator_module
 
-    out_dir = workspace / 'SchemaForge_output'
+    out_dir = workspace / 'Validation_output'
     out_dir.mkdir(parents=True, exist_ok=True)
     json_out = out_dir / 'github_validation_report.json'
     md_out = out_dir / 'github_validation_report.md'
