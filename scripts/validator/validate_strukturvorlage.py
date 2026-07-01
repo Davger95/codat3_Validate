@@ -703,7 +703,7 @@ class Validator:
                     self.add('error', 'group_label_invalid_characters', 'Designation (EN) entspricht nicht der Branchenkonvention. Zulässig sind nur ASCII-Buchstaben, Zahlen, Unterstriche sowie Klammern, Kommas und Punkte.', sheet=group_sheet, row=idx)
                 if re.search(r'[À-ÿ]', suffix):
                     self.add('warning', 'group_label_diacritics_discouraged', 'Designation (EN) sollte der Branchenkonvention folgend keine diakritischen Zeichen enthalten. Verwenden Sie eine ASCII-kompatible Schreibweise.', sheet=group_sheet, row=idx)
-                scope_topic_match = re.match(r'^([A-Z][a-z]{1,5})_([A-Z][A-Za-z0-9]{1,99})$', suffix)
+                scope_topic_match = re.match(r'^([A-Za-z][A-Za-z0-9]{1,20})_([A-Za-z][A-Za-z0-9]{1,99})$', suffix)
                 if not scope_topic_match:
                     self.add('error', 'invalid_group_label_structure', 'Designation (EN) entspricht nicht der Branchenkonvention. Erwartet wird das Muster <OrganizationCode>_<Scope>_<ScopeTopic>, wobei <Scope> eine kurze fachliche Kategorie ist und <ScopeTopic> mit Grossbuchstaben beginnt und ohne Leerzeichen geschrieben wird.', sheet=group_sheet, row=idx)
                 if len(group_en) > 100:
@@ -741,8 +741,17 @@ class Validator:
         for norm_value, hits in registry.items():
             if len(hits) > 1:
                 refs = ", ".join(f"{lang}@row{row}" for lang, row in hits)
+                languages = [lang for lang, _row in hits]
+                same_language_duplicate = len(set(languages)) < len(languages)
+                level = 'error' if same_language_duplicate else 'warning'
+                message = (
+                    f'{label_name} must be unique within {sheet_name} for the same language. '
+                    f'Duplicate label across multilingual reference fields: {norm_value} ({refs})'
+                    if same_language_duplicate else
+                    f'{label_name} is reused across different language fields in {sheet_name}: {norm_value} ({refs})'
+                )
                 for lang, row in hits:
-                    self.add('error', error_code, f'{label_name} must be unique within {sheet_name}. Duplicate label across multilingual reference fields: {norm_value} ({refs})', sheet=sheet_name, row=row)
+                    self.add(level, error_code, message, sheet=sheet_name, row=row)
 
     def validate_klassen(self):
         sheet_name = self._sheet_name_for('classes')
@@ -1022,8 +1031,10 @@ class Validator:
                     elif self.is_absolute_uri(uri_value):
                         if not self.is_valid_bsdd_identifier_uri(uri_value):
                             self.add('error', 'invalid_ifc_linked_uri_namespace', f'{uri_label} is not in a valid buildingSMART/bSDD identifier namespace: {uri_value}', sheet=sheet_name, row=idx)
-                        elif ifc_uri_set and uri_value not in ifc_uri_set:
-                            self.add('error', 'unknown_ifc_linked_uri', f'{uri_label} not found in authoritative bSDD harvest: {uri_value}', sheet=sheet_name, row=idx)
+                        else:
+                            tail = str(uri_value).rstrip('/').rsplit('/', 1)[-1]
+                            if not re.match(r'^(Pset|Qto)_[A-Za-z0-9_]+$', tail):
+                                self.add('error', 'invalid_ifc_linked_uri', f'{uri_label} absolute IRI must end in a valid IFC set name like Pset_* / Qto_*. Got: {uri_value}', sheet=sheet_name, row=idx)
                     else:
                         if not re.match(r'^(Pset|Qto)_[A-Za-z0-9_]+$', str(uri_value).strip()):
                             self.add('error', 'invalid_ifc_linked_uri', f'{uri_label} must be either an absolute IRI or a valid IFC set name like Pset_* / Qto_*. Got: {uri_value}', sheet=sheet_name, row=idx)
@@ -1071,7 +1082,9 @@ class Validator:
                             expected = qudt_labels[unit_qudt].get(lang_key, set())
                             canonical = sorted(expected)[0] if expected else None
                             if not raw_name and canonical:
-                                self.add('warning', 'missing_qudt_unit_label', f'{column_label} is system-generated from QUDT and should not be authored manually. Generated value: {canonical}', sheet=sheet_name, row=idx)
+                                # Unit label is generated from QUDT; treat as informational normalization only (no warning)
+                                self.add_normalization(sheet_name, idx, column_label, None, canonical, 'System-generated unit label derived from QUDT URI', 'derived-qudt-unit', True)
+                                # Previous behavior raised a warning; suppressed per policy to avoid noisy warnings for QUDT normalization
                                 self.add_normalization(sheet_name, idx, column_label, raw_name, canonical, 'System-generated unit label derived from local QUDT rdfs:label', 'derived-qudt-unit-label', True)
                             elif raw_name:
                                 normalized = self._normalize_label(raw_name)
@@ -1224,30 +1237,41 @@ class Validator:
             property_allowed_values = {}
             if 'Properties' in self.wb.sheetnames:
                 pws = self.wb['Properties']
+                p_headers = self._sheet_headers('properties', pws)
                 for ridx, prow in self._iter_data_rows(pws, 8):
-                    prop_code = self._cell(prow, 5)
-                    if prop_code:
-                        property_allowed_values[prop_code] = self.allowed_values_for_property(prop_code)
-                    for value in [self._cell(prow, 7), self._cell(prow, 8), self._cell(prow, 9), self._cell(prow, 10)]:
+                    prop_identifier = self._cell(prow, p_headers.get('Property-Code', p_headers.get('Property-ID', 6)))
+                    if not prop_identifier:
+                        prop_identifier = self._cell(prow, p_headers.get('Property-ID', 5))
+                    if prop_identifier:
+                        property_allowed_values[prop_identifier] = self.allowed_values_for_property(prop_identifier)
+                    for header_name in ['Bezeichnung (DE)', 'Designation (EN)', 'Désignation (FR)', 'Designazione (IT)']:
+                        value = self._cell(prow, p_headers.get(header_name, 0)) if p_headers.get(header_name, 0) else None
                         norm = self._norm(value)
-                        if norm and prop_code:
-                            property_label_map[norm] = prop_code
+                        if norm and prop_identifier:
+                            property_label_map[norm] = prop_identifier
             group_sheet = 'GroupOfProperties' if 'GroupOfProperties' in self.wb.sheetnames else ('Merkmalgruppen' if 'Merkmalgruppen' in self.wb.sheetnames else None)
             group_label_map = {}
             if group_sheet:
                 gws = self.wb[group_sheet]
+                g_headers = self._sheet_headers('groups', gws)
                 for ridx, grow in self._iter_data_rows(gws, 8):
-                    for col in [6, 8, 9, 10]:
-                        val = self._cell(grow, col)
+                    for header_name in ['GoP-Code', 'Designation (EN)', 'Beschreibung (DE)', 'Description (FR)', 'Descrizione (IT)']:
+                        val = self._cell(grow, g_headers.get(header_name, 0)) if g_headers.get(header_name, 0) else None
                         norm = self._norm(val)
                         if norm:
                             group_label_map[norm] = val
+            row2_headers = {self._norm(ws.cell(2, c).value): c for c in range(1, ws.max_column + 1) if self._norm(ws.cell(2, c).value)}
+            property_anchor = row2_headers.get(self._norm('Property - Designation/Bezeichnung/Désignation/Designazione'))
+            document_anchor = row2_headers.get(self._norm('Document - Designation/Bezeichnung/Désignation/Designazione'))
+            if not property_anchor:
+                property_anchor = 5
+            property_start_col = property_anchor + 1
+            property_end_col = (document_anchor - 1) if document_anchor and document_anchor > property_start_col else ws.max_column
+
             property_cols = []
-            for col_idx in range(9, ws.max_column + 1):
+            for col_idx in range(property_start_col, property_end_col + 1):
                 label = self._cell([ws.cell(2, col_idx).value], 1)
                 prop_identifier = self._cell([ws.cell(3, col_idx).value], 1)
-                if col_idx >= 9 and not prop_identifier:
-                    continue
                 if not label and not prop_identifier:
                     continue
                 prop_code = None
@@ -1257,14 +1281,12 @@ class Validator:
                     norm = self._norm(label)
                     prop_code = property_label_map.get(norm)
                 if not prop_code:
-                    # In aligned Data_Template, row 3 technical identifiers are authoritative.
-                    # If there is a technical ID but it is unknown, report it; otherwise ignore decorative row-2 labels.
-                    if prop_identifier:
-                        display = label or prop_identifier
-                        self.add('error', 'matrix_unknown_property_label', f'Data_Template property reference not found in Properties labels/IDs (DE/EN/FR/IT): {display}', sheet=matrix_sheet, row=3)
+                    display = label or prop_identifier
+                    if display:
+                        self.add('error', 'matrix_unknown_property_label', f'Data_Template property reference not found in Properties labels/IDs (DE/EN/FR/IT): {display}', sheet=matrix_sheet, row=2)
                     continue
                 property_cols.append((col_idx, prop_code, label or prop_identifier))
-            for ridx in range(8, ws.max_row + 1):
+            for ridx in range(5, ws.max_row + 1):
                 row_values = [ws.cell(ridx, c).value for c in range(1, ws.max_column + 1)]
                 if not self._row_has_meaningful_content(row_values):
                     continue
