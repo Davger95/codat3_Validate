@@ -933,7 +933,7 @@ class Validator:
                     data_type_ifc = self._cell(row, headers.get('DataType\n(IFC)', 14))
                     value_list_id = self._cell(row, headers.get('EnumerationDesignation (EN)', headers.get('Properties.EnumerationDesignation (EN)', headers.get('Values.Enumeration-ID', headers.get('Werteliste-ID', 17)))) )
                     value_list = None
-                    ifc_property_uri = self._cell(row, headers.get('IFC_URI', headers.get('GUID/URI_1', 19)))
+                    ifc_property_uri = self._cell(row, headers.get('IFC_URI', headers.get('GUID/URI', headers.get('GUID/URI_1', 19))))
                     ifc_pset = self._cell(row, headers.get('IfcPropertySet (Pset)\nIfcQuantitySet (Qto)', 20))
                     ifc_qto = None
                     custom_pset = None
@@ -1019,12 +1019,14 @@ class Validator:
                 if uri_value:
                     if not ifc_property_uri:
                         self.add('warning', 'ifc_set_without_ifc_uri', f'{uri_label} is filled but {sheet_name}.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.', sheet=sheet_name, row=idx)
-                    elif not self.is_absolute_uri(uri_value):
-                        self.add('error', 'invalid_ifc_linked_uri', f'{uri_label} is not a valid absolute IRI: {uri_value}', sheet=sheet_name, row=idx)
-                    elif not self.is_valid_bsdd_identifier_uri(uri_value):
-                        self.add('error', 'invalid_ifc_linked_uri_namespace', f'{uri_label} is not in a valid buildingSMART/bSDD identifier namespace: {uri_value}', sheet=sheet_name, row=idx)
-                    elif ifc_uri_set and uri_value not in ifc_uri_set:
-                        self.add('error', 'unknown_ifc_linked_uri', f'{uri_label} not found in authoritative bSDD harvest: {uri_value}', sheet=sheet_name, row=idx)
+                    elif self.is_absolute_uri(uri_value):
+                        if not self.is_valid_bsdd_identifier_uri(uri_value):
+                            self.add('error', 'invalid_ifc_linked_uri_namespace', f'{uri_label} is not in a valid buildingSMART/bSDD identifier namespace: {uri_value}', sheet=sheet_name, row=idx)
+                        elif ifc_uri_set and uri_value not in ifc_uri_set:
+                            self.add('error', 'unknown_ifc_linked_uri', f'{uri_label} not found in authoritative bSDD harvest: {uri_value}', sheet=sheet_name, row=idx)
+                    else:
+                        if not re.match(r'^(Pset|Qto)_[A-Za-z0-9_]+$', str(uri_value).strip()):
+                            self.add('error', 'invalid_ifc_linked_uri', f'{uri_label} must be either an absolute IRI or a valid IFC set name like Pset_* / Qto_*. Got: {uri_value}', sheet=sheet_name, row=idx)
             expected_value_designation = None
             if self.is_abgeglichen_template() and value_ids:
                 value_designations = set()
