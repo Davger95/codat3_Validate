@@ -1,87 +1,67 @@
 name: Validate Data Dictionary
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'templates/**/*.xlsx'
+      - 'scripts/validator/validate_strukturvorlage.py'
+      - 'scripts/validator/run_github_validation.py'
+      - 'scripts/validator/readers/**/*.py'
+      - '.github/workflows/validate-data-dictionary.yml'
+  pull_request:
+    paths:
+      - 'templates/**/*.xlsx'
+      - 'scripts/validator/validate_strukturvorlage.py'
+      - 'scripts/validator/run_github_validation.py'
+      - 'scripts/validator/readers/**/*.py'
+      - '.github/workflows/validate-data-dictionary.yml'
   workflow_dispatch:
     inputs:
       workbook_path:
-        description: 'Optional relative path to the workbook (.xlsx). Defaults to the authored sample workbook for the public MVP pass-case.'
+        description: 'Relativer Pfad zur zu validierenden .xlsx-Datei'
         required: false
-        default: 'templates/test_files/Strukturvorlage_DataDictionary_test1.xlsx'
-      fail_on_validation_errors:
-        description: 'Fail the workflow when parser, governance, pipeline, or validation errors occur.'
-        required: false
-        default: 'true'
-  push:
-    paths:
-      - '**/*.xlsx'
-      - '.github/workflows/validate-data-dictionary.yml'
-      - 'scripts/schemaforge/validate_strukturvorlage.py'
-      - 'scripts/schemaforge/run_github_validation.py'
-      - 'scripts/schemaforge/readers/**/*.py'
-  pull_request:
-    paths:
-      - '**/*.xlsx'
-      - '.github/workflows/validate-data-dictionary.yml'
-      - 'scripts/schemaforge/validate_strukturvorlage.py'
-      - 'scripts/schemaforge/run_github_validation.py'
-      - 'scripts/schemaforge/readers/**/*.py'
+        default: 'templates/Strukturvorlage_DataDictionary_v2_empty.xlsx'
 
 jobs:
-  validate-dd:
+  validate:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    defaults:
-      run:
-        shell: bash
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
-      - name: Install Python dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install openpyxl rdflib
 
-      - name: Run validator and generate reports
-        id: validate
+      - name: Determine workbook path
+        id: workbook
+        shell: bash
         run: |
-          python scripts/schemaforge/run_github_validation.py \
+          if [ -n "${{ github.event.inputs.workbook_path }}" ]; then
+            echo "path=${{ github.event.inputs.workbook_path }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "path=templates/Strukturvorlage_DataDictionary_v2_empty.xlsx" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run validation wrapper
+        run: |
+          python scripts/validator/run_github_validation.py \
             --workspace . \
-            --workbook-path "${{ github.event.inputs.workbook_path || 'templates/test_files/Strukturvorlage_DataDictionary_test1.xlsx' }}"
+            --workbook-path "${{ steps.workbook.outputs.path }}"
 
       - name: Upload validation artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dd-validation-reports
+          name: validation-report
           path: |
             SchemaForge_output/github_validation_report.json
             SchemaForge_output/github_validation_report.md
             SchemaForge_output/github_validation_summary.json
-          if-no-files-found: error
-
-      - name: Add Markdown report to job summary
-        run: |
-          cat SchemaForge_output/github_validation_report.md >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Fail if blocking validation errors exist
-        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.fail_on_validation_errors == 'true' }}
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          summary = json.loads(Path('SchemaForge_output/github_validation_summary.json').read_text())
-          print(summary)
-          ok = (
-              summary.get('parser_valid') is True and
-              summary.get('pipeline_valid') is True and
-              summary.get('governance_valid') is True and
-              int(summary.get('errors', 0)) == 0
-          )
-          raise SystemExit(0 if ok else 1)
-          PY

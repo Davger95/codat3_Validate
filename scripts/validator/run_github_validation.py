@@ -56,7 +56,7 @@ def main(argv=None):
     if str(scripts_dir) not in sys.path:
         sys.path.insert(0, str(scripts_dir))
 
-    from schemaforge import validate_strukturvorlage as validator_module
+    from validator import validate_strukturvorlage as validator_module
 
     out_dir = workspace / 'SchemaForge_output'
     out_dir.mkdir(parents=True, exist_ok=True)

@@ -490,6 +490,51 @@ class Validator:
                 mapping[value] = idx
         return mapping
 
+    def _current_sheet_names(self) -> dict[str, str | None]:
+        return {
+            'classes': 'Classes' if 'Classes' in self.wb.sheetnames else None,
+            'properties': 'Properties' if 'Properties' in self.wb.sheetnames else None,
+            'values': 'Values' if 'Values' in self.wb.sheetnames else None,
+            'documents': 'Documents' if 'Documents' in self.wb.sheetnames else None,
+            'groups': 'GroupOfProperties' if 'GroupOfProperties' in self.wb.sheetnames else None,
+            'matrix': 'Data_Template' if 'Data_Template' in self.wb.sheetnames else None,
+            'rules': 'Rules' if 'Rules' in self.wb.sheetnames else None,
+        }
+
+    def _legacy_sheet_names(self) -> dict[str, str | None]:
+        return {
+            'classes': 'Objekte' if 'Objekte' in self.wb.sheetnames else ('Klassen' if 'Klassen' in self.wb.sheetnames else None),
+            'properties': 'Merkmale' if 'Merkmale' in self.wb.sheetnames else None,
+            'values': 'Werte' if 'Werte' in self.wb.sheetnames else None,
+            'documents': 'Dokumente' if 'Dokumente' in self.wb.sheetnames else None,
+            'groups': 'Merkmalgruppen' if 'Merkmalgruppen' in self.wb.sheetnames else None,
+            'matrix': 'Data Template AreaMgmt' if 'Data Template AreaMgmt' in self.wb.sheetnames else ('KlassenMerkmal' if 'KlassenMerkmal' in self.wb.sheetnames else None),
+            'rules': 'Rules' if 'Rules' in self.wb.sheetnames else None,
+        }
+
+    def _template_mode(self) -> str:
+        if self.is_abgeglichen_template():
+            return 'current'
+        if self.is_v20260619_template():
+            return 'legacy-v20260619'
+        return 'legacy'
+
+    def _sheet_name_for(self, logical_name: str) -> str | None:
+        mode = self._template_mode()
+        if mode == 'current':
+            return self._current_sheet_names().get(logical_name)
+        return self._legacy_sheet_names().get(logical_name)
+
+    def _sheet_headers(self, logical_name: str, ws=None) -> dict[str, int]:
+        if ws is None:
+            sheet_name = self._sheet_name_for(logical_name)
+            if not sheet_name or sheet_name not in self.wb.sheetnames:
+                return {}
+            ws = self.wb[sheet_name]
+        header_row = 1 if self._template_mode() == 'current' else 3
+        if logical_name in {'values', 'documents'} and self._template_mode() == 'current':
+            header_row = 1
+        return self._header_index_map(ws, header_row)
 
     def _load_dropdown_values(self, target_label: str) -> set[str]:
         sheet_name = 'Rules'
@@ -532,16 +577,12 @@ class Validator:
         return collected
 
     def validate_wertekatalog(self):
-        if 'Values' in self.wb.sheetnames:
-            ws = self.wb['Values']
-            value_sheet_name = 'Values'
-        elif 'Werte' in self.wb.sheetnames:
-            ws = self.wb['Werte']
-            value_sheet_name = 'Werte'
-        else:
+        value_sheet_name = self._sheet_name_for('values')
+        if not value_sheet_name or value_sheet_name not in self.wb.sheetnames:
             return
-        header_row = 1 if 'Values' in self.wb.sheetnames else 3
-        data_start = 8 if 'Values' in self.wb.sheetnames else 10
+        ws = self.wb[value_sheet_name]
+        header_row = 1 if value_sheet_name == 'Values' else 3
+        data_start = 8 if value_sheet_name == 'Values' else 10
         headers = self._header_index_map(ws, header_row)
         seen_ids = set()
         for idx, row in self._iter_data_rows(ws, data_start):
@@ -608,7 +649,7 @@ class Validator:
                 self.add('error', 'invalid_value_catalog_version_date', f'Values.Version date should be ISO 8601 date-time with timezone, e.g. 2026-06-18T15:30+02:00, got: {version_date}', sheet=value_sheet_name, row=idx)
 
     def validate_merkmalsgruppenkatalog(self):
-        group_sheet = 'GroupOfProperties' if 'GroupOfProperties' in self.wb.sheetnames else ('Merkmalgruppen' if 'Merkmalgruppen' in self.wb.sheetnames else None)
+        group_sheet = self._sheet_name_for('groups')
         if not group_sheet:
             return
         ws = self.wb[group_sheet]
@@ -639,7 +680,8 @@ class Validator:
                 continue
 
             if group_id and group_id in seen_ids:
-                self.add('error', 'duplicate_group_id', f'Duplicate Merkmalsgruppe-ID: {group_id}', sheet=group_sheet, row=idx)
+                group_id_column = 'GoP-ID' if 'GoP-ID' in headers else 'Merkmalsgruppe-ID'
+                self.add('error', 'duplicate_group_id', f'Duplicate {group_id_column}: {group_id}', sheet=group_sheet, row=idx)
 
             if group_code:
                 if group_code in seen_codes:
@@ -667,15 +709,16 @@ class Validator:
                 if len(group_en) > 100:
                     self.add('error', 'group_label_too_long', f'Designation (EN) entspricht nicht der Branchenkonvention. Der vollständige Name darf maximal 100 Zeichen lang sein, aktuell sind es {len(group_en)}.', sheet=group_sheet, row=idx)
                 expected_id = self.slugify(group_en)
+                group_id_column = 'GoP-ID' if 'GoP-ID' in headers else 'Merkmalsgruppe-ID'
                 if not group_id and expected_id:
-                    self.add_normalization(group_sheet, idx, 'Merkmalsgruppe-ID', group_id, expected_id, 'System-generated ID derived from Designation (EN)', 'derived-group-id', True)
+                    self.add_normalization(group_sheet, idx, group_id_column, group_id, expected_id, 'System-generated ID derived from Designation (EN)', 'derived-group-id', True)
                     group_id = expected_id
                 elif group_id and expected_id and group_id != expected_id:
-                    self.add('warning', 'system_generated_group_id_override', f'Merkmalsgruppe-ID is a system-generated field. Manual value {group_id} will be overwritten by generated value {expected_id}.', sheet=group_sheet, row=idx)
-                    self.add_normalization(group_sheet, idx, 'Merkmalsgruppe-ID', group_id, expected_id, 'Manual ID overridden by system-generated ID derived from Designation (EN)', 'derived-group-id', True)
+                    self.add('warning', 'system_generated_group_id_override', f'{group_id_column} is a system-generated field. Manual value {group_id} will be overwritten by generated value {expected_id}.', sheet=group_sheet, row=idx)
+                    self.add_normalization(group_sheet, idx, group_id_column, group_id, expected_id, 'Manual ID overridden by system-generated ID derived from Designation (EN)', 'derived-group-id', True)
                     group_id = expected_id
                 if group_id in seen_ids:
-                    self.add('error', 'duplicate_group_id', f'Duplicate Merkmalsgruppe-ID: {group_id}', sheet=group_sheet, row=idx)
+                    self.add('error', 'duplicate_group_id', f'Duplicate {group_id_column}: {group_id}', sheet=group_sheet, row=idx)
                 else:
                     seen_ids.add(group_id)
 
@@ -689,9 +732,9 @@ class Validator:
                 self.add('error', 'missing_group_description_local', 'At least one local-language description must be filled in DE/FR/IT.', sheet=group_sheet, row=idx)
 
             if status and status not in ALLOWED_LIFECYCLE:
-                self.add('error', 'invalid_group_status', f'Merkmalgruppen.Status must be one of the allowed lifecycle values, got: {status}', sheet=group_sheet, row=idx)
+                self.add('error', 'invalid_group_status', f'{group_sheet}.Status must be one of the allowed lifecycle values, got: {status}', sheet=group_sheet, row=idx)
             if version_date and not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})$', version_date):
-                self.add('error', 'invalid_group_version_date', f'Merkmalgruppen.Versionsdatum should be ISO 8601 date-time with timezone, e.g. 2026-06-18T15:30+02:00, got: {version_date}', sheet=group_sheet, row=idx)
+                self.add('error', 'invalid_group_version_date', f'{group_sheet}.Version date should be ISO 8601 date-time with timezone, e.g. 2026-06-18T15:30+02:00, got: {version_date}', sheet=group_sheet, row=idx)
         self._check_unique_labels(seen_labels, group_sheet, 'duplicate_group_label', 'Property-group label')
 
     def _check_unique_labels(self, registry: dict[str, list[tuple[str, int]]], sheet_name: str, error_code: str, label_name: str):
@@ -702,11 +745,11 @@ class Validator:
                     self.add('error', error_code, f'{label_name} must be unique within {sheet_name}. Duplicate label across multilingual reference fields: {norm_value} ({refs})', sheet=sheet_name, row=row)
 
     def validate_klassen(self):
-        sheet_name = 'Classes' if ('Classes' in self.wb.sheetnames and self.is_abgeglichen_template()) else ('Objekte' if ('Objekte' in self.wb.sheetnames and (self.is_v20260619_template() or self.is_abgeglichen_template())) else 'Klassen')
-        if sheet_name not in self.wb.sheetnames:
+        sheet_name = self._sheet_name_for('classes')
+        if not sheet_name or sheet_name not in self.wb.sheetnames:
             return
         ws = self.wb[sheet_name]
-        headers = self._header_index_map(ws, 1 if self.is_abgeglichen_template() else 3)
+        headers = self._sheet_headers('classes', ws)
         seen_codes = set()
         seen_labels = {}
         dd = self.get_dd()
@@ -751,8 +794,8 @@ class Validator:
                     related_document = self._cell(row, headers.get('RelatedDocumentName (EN)', headers.get('Classes.RelatedDocumentName (EN)', headers.get('Objekte.RelatedDocument (Document-ID)', headers.get('RelatedDocument (Document-ID)', headers.get('RelatedDocument', 30))))))
                     identification = None
                     final_name = None
-                    self._require_en_plus_one_local(row, idx, sheet_name, headers.get('Designation (EN)', headers.get('Designation', 12)), {'DE': headers.get('Bezeichnung (DE)', headers.get('Bezeichnung', 11)), 'IT': headers.get('Designazione (IT)', headers.get('Designazione (IT)', 14)), 'FR': headers.get('Désignation (FR)', headers.get('Désignation (FR)', 13))}, 'Objekt.Bezeichnung/Designation')
-                    self._require_en_plus_one_local(row, idx, sheet_name, headers.get('Description (EN)', headers.get('Description', 16)), {'DE': headers.get('Beschreibung (DE)', headers.get('Beschreibung', 15)), 'IT': headers.get('Descrizione (IT)', headers.get('Beschreibung (IT)', 18)), 'FR': headers.get('Description (FR)', headers.get('Beschreibung (FR)', 17))}, 'Objekt.Beschreibung/Description')
+                    self._require_en_plus_one_local(row, idx, sheet_name, headers.get('Designation (EN)', headers.get('Designation', 12)), {'DE': headers.get('Bezeichnung (DE)', headers.get('Bezeichnung', 11)), 'IT': headers.get('Designazione (IT)', headers.get('Designazione (IT)', 14)), 'FR': headers.get('Désignation (FR)', headers.get('Désignation (FR)', 13))}, 'Classes.Bezeichnung/Designation')
+                    self._require_en_plus_one_local(row, idx, sheet_name, headers.get('Description (EN)', headers.get('Description', 16)), {'DE': headers.get('Beschreibung (DE)', headers.get('Beschreibung', 15)), 'IT': headers.get('Descrizione (IT)', headers.get('Beschreibung (IT)', 18)), 'FR': headers.get('Description (FR)', headers.get('Beschreibung (FR)', 17))}, 'Classes.Beschreibung/Description')
                     label_de = self._cell(row, headers.get('Bezeichnung (DE)', headers.get('Bezeichnung', 11)))
                     label_fr = self._cell(row, headers.get('Désignation (FR)', 13))
                     label_it = self._cell(row, headers.get('Designazione (IT)', 14))
@@ -760,20 +803,20 @@ class Validator:
                         norm = self._norm(value)
                         if norm:
                             seen_labels.setdefault(norm, []).append((lang, idx))
-                    expected_obj_id = self.slugify(designation or bezeichnung) if (designation or bezeichnung) else None
+                    expected_obj_id = self.slugify(desation := (designation or bezeichnung)) if (designation or bezeichnung) else None
+                    class_id_column = 'Class-ID' if 'Class-ID' in headers else 'Objekt-ID'
                     if not obj_id and expected_obj_id:
-                        self.add('warning', 'missing_object_id', f'Objekt-ID is system-generated and should not be authored manually. Generated value: {expected_obj_id}', sheet=sheet_name, row=idx)
-                        self.add_normalization(sheet_name, idx, 'Objekt-ID', obj_id, expected_obj_id, 'System-generated ID derived from Designation/Bezeichnung', 'derived-object-id', True)
+                        self.add_normalization(sheet_name, idx, class_id_column, obj_id, expected_obj_id, 'System-generated ID derived from Designation/Bezeichnung', 'derived-object-id', True)
                         obj_id = expected_obj_id
                     elif obj_id and expected_obj_id and obj_id != expected_obj_id:
-                        self.add('warning', 'system_generated_object_id_override', f'Objekt-ID is a system-generated field. Manual value {obj_id} will be overwritten by generated value {expected_obj_id}.', sheet=sheet_name, row=idx)
-                        self.add_normalization(sheet_name, idx, 'Objekt-ID', obj_id, expected_obj_id, 'Manual ID overridden by system-generated ID derived from Designation/Bezeichnung', 'derived-object-id', True)
+                        self.add('warning', 'system_generated_object_id_override', f'{class_id_column} is a system-generated field. Manual value {obj_id} will be overwritten by generated value {expected_obj_id}.', sheet=sheet_name, row=idx)
+                        self.add_normalization(sheet_name, idx, class_id_column, obj_id, expected_obj_id, 'Manual ID overridden by system-generated ID derived from Designation/Bezeichnung', 'derived-object-id', True)
                     if object_class_allowed and obj_einordnung and obj_einordnung not in object_class_allowed:
-                        self.add('error', 'invalid_objekt_einordnung', f'Objekt-Einordnung must come from Dropdownregeln.Objekt-Einordnung. Got: {obj_einordnung}', sheet=sheet_name, row=idx)
+                        self.add('error', 'invalid_objekt_einordnung', f'Objekt-Einordnung must come from Rules.Objekt-Einordnung. Got: {obj_einordnung}', sheet=sheet_name, row=idx)
                     if status and status_allowed and status not in status_allowed:
-                        self.add('error', 'invalid_object_status', f'Objekte.Status must come from Dropdownregeln.Status. Got: {status}', sheet=sheet_name, row=idx)
+                        self.add('error', 'invalid_object_status', f'{sheet_name}.Status must come from Rules.Status. Got: {status}', sheet=sheet_name, row=idx)
                     if version_date and not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})$', version_date):
-                        self.add('error', 'invalid_object_version_date', f'Objekte.Versionsdatum should be ISO 8601 date-time with timezone, e.g. 2026-06-18T15:30+02:00, got: {version_date}', sheet=sheet_name, row=idx)
+                        self.add('error', 'invalid_object_version_date', f'{sheet_name}.Version date should be ISO 8601 date-time with timezone, e.g. 2026-06-18T15:30+02:00, got: {version_date}', sheet=sheet_name, row=idx)
                 else:
                     obj_id = self._cell(row, 7)
                     bezeichnung = self._cell(row, 9)
@@ -790,24 +833,26 @@ class Validator:
                     obj_einordnung = self._cell(row, 8)
             if not obj_id:
                 derived_id = self.slugify(designation or bezeichnung)
+                class_id_column = 'Class-ID' if (self.is_abgeglichen_template() and 'Class-ID' in headers) else 'Objekt-ID'
                 if derived_id:
-                    self.add('warning', 'missing_class_code', f'Objekte row missing Objekt-ID; derivable suggested ID: {derived_id}', sheet=sheet_name, row=idx)
-                    self.add_normalization('Klassen', idx, 'Objekt-ID', obj_id, derived_id, 'Missing class ID is derivable from Designation/Bezeichnung', 'derived-id-suggestion', True)
+                    self.add('warning', 'missing_class_code', f'{sheet_name} row missing {class_id_column}; derivable suggested ID: {derived_id}', sheet=sheet_name, row=idx)
+                    self.add_normalization(sheet_name, idx, class_id_column, obj_id, derived_id, 'Missing class ID is derivable from Designation/Bezeichnung', 'derived-id-suggestion', True)
                     obj_id = derived_id
                 else:
-                    self.add('error', 'missing_class_code', 'Objekte row missing Objekt-ID and no derivable Designation/Bezeichnung is available', sheet=sheet_name, row=idx)
+                    self.add('error', 'missing_class_code', f'{sheet_name} row missing {class_id_column} and no derivable Designation/Bezeichnung is available', sheet=sheet_name, row=idx)
             elif obj_id in seen_codes:
-                self.add('error', 'duplicate_class_code', f'Duplicate Objekt-ID: {obj_id}', sheet=sheet_name, row=idx)
+                class_id_column = 'Class-ID' if (self.is_abgeglichen_template() and 'Class-ID' in headers) else 'Objekt-ID'
+                self.add('error', 'duplicate_class_code', f'Duplicate {class_id_column}: {obj_id}', sheet=sheet_name, row=idx)
             else:
                 seen_codes.add(obj_id)
             if not (bezeichnung or designation):
-                self.add('error', 'missing_class_label', 'Objekte row missing Bezeichnung/Designation', sheet=sheet_name, row=idx)
+                self.add('error', 'missing_class_label', f'{sheet_name} row missing Bezeichnung/Designation', sheet=sheet_name, row=idx)
             if not (beschreibung or description):
-                self.add('error', 'missing_class_definition', 'Objekte row missing Beschreibung/Description', sheet=sheet_name, row=idx)
+                self.add('error', 'missing_class_definition', f'{sheet_name} row missing Beschreibung/Description', sheet=sheet_name, row=idx)
             if not obj_einordnung:
-                self.add('warning', 'missing_objekt_einordnung', 'Objekte row missing Objekt-Einordnung', sheet=sheet_name, row=idx)
+                self.add('warning', 'missing_objekt_einordnung', f'{sheet_name} row missing Objekt-Einordnung', sheet=sheet_name, row=idx)
             if not ifc_uri:
-                self.add('error', 'missing_ifc_uri', 'Objekte row missing IFC URI', sheet=sheet_name, row=idx)
+                self.add('error', 'missing_ifc_uri', f'{sheet_name} row missing IFC URI', sheet=sheet_name, row=idx)
             else:
                 if not self.is_absolute_uri(ifc_uri):
                     self.add('error', 'invalid_ifc_uri', f'Invalid IFC URI: {ifc_uri}', sheet=sheet_name, row=idx)
@@ -816,15 +861,14 @@ class Validator:
                 elif ifc_uri_set and ifc_uri not in ifc_uri_set:
                     self.add('error', 'unknown_ifc_uri', f'IFC URI not found in authoritative bSDD harvest: {ifc_uri}', sheet=sheet_name, row=idx)
             if not ifc_obj:
-                self.add('error', 'missing_ifc_object_entity', 'Objekte row missing IfcObject Entity', sheet=sheet_name, row=idx)
+                self.add('error', 'missing_ifc_object_entity', f'{sheet_name} row missing IfcObject Entity', sheet=sheet_name, row=idx)
             if not ifc_type:
                 self.add('warning', 'missing_ifc_type_object_entity', 'IfcTypeObject Entity is missing; this may be acceptable if mapping exists only on object level', sheet=sheet_name, row=idx)
             self.validate_predefined_type(ifc_obj, predefined, ifc_uri, sheet_name, idx)
             if not self.is_v20260619_template():
-                classification_in_use = bool(source or identification or final_name)
                 if self.is_abgeglichen_template():
                     if not source:
-                        self.add('error', 'missing_prov_source', 'Objekte.Herkunft (PROV) is required and may be user-defined.', sheet=sheet_name, row=idx)
+                        self.add('error', 'missing_prov_source', f'{sheet_name}.Provenance (PROV) is required and may be user-defined.', sheet=sheet_name, row=idx)
                     if not related_document:
                         self.add_normalization(sheet_name, idx, 'RelatedDocumentName (EN)', related_document, 'Organisation', 'Empty RelatedDocument defaults to Organisation', 'default-related-document', True)
                     elif document_name_en_set and related_document not in document_name_en_set:
@@ -839,22 +883,18 @@ class Validator:
                             self.add('error', 'invalid_object_type', f'ObjectType must be a valid IFC entity. Got: {object_type}', sheet=sheet_name, row=idx)
                 else:
                     if not source:
-                        self.add('error', 'missing_source', 'Objekte.Herkunft (PROV) is required and may be user-defined.', sheet=sheet_name, row=idx)
+                        self.add('error', 'missing_source', f'{sheet_name}.Provenance (PROV) is required and may be user-defined.', sheet=sheet_name, row=idx)
                     elif source != 'Organisation' and document_source_codes and source not in document_source_codes:
-                        self.add('error', 'unknown_source_code', f'Klassen.Source not registered in Dokumente.SourceCode: {source}. Add the source formally or use Organisation.', sheet=sheet_name, row=idx)
-                if classification_in_use and source and source != 'Organisation' and not identification:
-                    self.add('warning', 'missing_identification', 'Classification source is given but Identification is missing. Please add it if applicable, otherwise ignore.', sheet=sheet_name, row=idx)
-                if classification_in_use and (source or identification) and not final_name:
-                    self.add('warning', 'missing_classification_name', 'Classification section is in use but final Name column is missing.', sheet=sheet_name, row=idx)
+                        self.add('error', 'unknown_source_code', f'{sheet_name}.Provenance (PROV) value is not registered in Documents source registry: {source}. Add the source formally or use Organisation.', sheet=sheet_name, row=idx)
         if self.is_abgeglichen_template():
             self._check_unique_labels(seen_labels, sheet_name, 'duplicate_object_label', 'Object label')
 
     def validate_properties(self):
-        sheet_name = 'Properties' if self.is_abgeglichen_template() and 'Properties' in self.wb.sheetnames else 'Merkmale'
-        if sheet_name not in self.wb.sheetnames:
+        sheet_name = self._sheet_name_for('properties')
+        if not sheet_name or sheet_name not in self.wb.sheetnames:
             return
         ws = self.wb[sheet_name]
-        headers = self._header_index_map(ws, 1 if self.is_abgeglichen_template() else 3)
+        headers = self._sheet_headers('properties', ws)
         ifc_uri_set = self.get_ifc_uri_set()
         seen_codes = set()
         seen_labels = {}
@@ -900,8 +940,8 @@ class Validator:
                     local_group = self._cell(row, 2)
                     status = self._cell(row, headers.get('Status', 28))
                     version_date = self._cell(row, headers.get('Version date', headers.get('Versionsdatum', 29)))
-                    self._require_en_plus_one_local(row, idx, sheet_name, headers.get('Designation (EN)', headers.get('Property', 8)), {'DE': headers.get('Bezeichnung (DE)', headers.get('Merkmal', 7)), 'IT': headers.get('Designazione (IT)', headers.get('IT', 10)), 'FR': headers.get('Désignation (FR)', headers.get('FR', 9))}, 'Merkmale.Bezeichnung/Designation')
-                    self._require_en_plus_one_local(row, idx, sheet_name, headers.get('Description (EN)', 12), {'DE': headers.get('Beschreibung (DE)', headers.get('Beschreibung', 11)), 'IT': headers.get('Descrizione (IT)', headers.get('Beschreibung (IT)', 14)), 'FR': headers.get('Description (FR)', headers.get('Beschreibung (FR)', 13))}, 'Merkmale.Beschreibung/Description')
+                    self._require_en_plus_one_local(row, idx, sheet_name, headers.get('Designation (EN)', headers.get('Property', 8)), {'DE': headers.get('Bezeichnung (DE)', headers.get('Merkmal', 7)), 'IT': headers.get('Designazione (IT)', headers.get('IT', 10)), 'FR': headers.get('Désignation (FR)', headers.get('FR', 9))}, 'Properties.Bezeichnung/Designation')
+                    self._require_en_plus_one_local(row, idx, sheet_name, headers.get('Description (EN)', 12), {'DE': headers.get('Beschreibung (DE)', headers.get('Beschreibung', 11)), 'IT': headers.get('Descrizione (IT)', headers.get('Beschreibung (IT)', 14)), 'FR': headers.get('Description (FR)', headers.get('Beschreibung (FR)', 13))}, 'Properties.Beschreibung/Description')
                     label_fr = self._cell(row, headers.get('Désignation (FR)', headers.get('FR', 9)))
                     label_it = self._cell(row, headers.get('Designazione (IT)', headers.get('IT', 10)))
                     for lang, value in [('DE', merkmal), ('EN', prop_en), ('FR', label_fr), ('IT', label_it)]:
@@ -924,26 +964,29 @@ class Validator:
                     local_group = self._cell(row, 20)
             expected_prop_id = self.slugify(prop_en) if prop_en else None
             if self.is_abgeglichen_template():
+                property_id_column = 'Property-ID' if 'Property-ID' in headers else 'Merkmal-ID'
                 if not prop_id:
                     if expected_prop_id:
-                        self.add_normalization(sheet_name, idx, 'Merkmal-ID', prop_id, expected_prop_id, 'System-generated ID derived from Property (EN)', 'derived-property-id', True)
+                        self.add_normalization(sheet_name, idx, property_id_column, prop_id, expected_prop_id, 'System-generated ID derived from Property (EN)', 'derived-property-id', True)
                         prop_code = expected_prop_id
                     else:
-                        self.add('error', 'missing_property_id_generation_source', 'Property row is missing Merkmal-ID and no usable Property (EN) is available for system generation.', sheet=sheet_name, row=idx)
+                        self.add('error', 'missing_property_id_generation_source', f'Property row is missing {property_id_column} and no usable Designation (EN) is available for system generation.', sheet=sheet_name, row=idx)
                 elif expected_prop_id and prop_id != expected_prop_id:
-                    self.add('warning', 'system_generated_property_id_override', f'Merkmal-ID is a system-generated field. Manual value {prop_id} will be overwritten by generated value {expected_prop_id}.', sheet=sheet_name, row=idx)
-                    self.add_normalization(sheet_name, idx, 'Merkmal-ID', prop_id, expected_prop_id, 'Manual ID overridden by system-generated ID derived from Property (EN)', 'derived-property-id', True)
+                    self.add('warning', 'system_generated_property_id_override', f'{property_id_column} is a system-generated field. Manual value {prop_id} will be overwritten by generated value {expected_prop_id}.', sheet=sheet_name, row=idx)
+                    self.add_normalization(sheet_name, idx, property_id_column, prop_id, expected_prop_id, 'Manual ID overridden by system-generated ID derived from Property (EN)', 'derived-property-id', True)
                     prop_code = expected_prop_id
             if not prop_code:
-                self.add('error', 'missing_property_id_generation_source', 'Property row is missing Merkmal-ID and no usable Property (EN) is available for system generation.', sheet=sheet_name, row=idx)
+                property_id_column = 'Property-ID' if (self.is_abgeglichen_template() and 'Property-ID' in headers) else 'Merkmal-ID'
+                self.add('error', 'missing_property_id_generation_source', f'Property row is missing {property_id_column} and no usable Designation (EN) is available for system generation.', sheet=sheet_name, row=idx)
             elif prop_code in seen_codes:
-                self.add('error', 'duplicate_property_code', f'Duplicate Merkmal-ID: {prop_code}', sheet=sheet_name, row=idx)
+                property_id_column = 'Property-ID' if (self.is_abgeglichen_template() and 'Property-ID' in headers) else 'Merkmal-ID'
+                self.add('error', 'duplicate_property_code', f'Duplicate {property_id_column}: {prop_code}', sheet=sheet_name, row=idx)
             else:
                 seen_codes.add(prop_code)
             prop_short_code = self._cell(row, headers.get('Property-Code', headers.get('Merkmal-Code', 6))) if self.is_abgeglichen_template() else None
             if prop_short_code:
                 if prop_short_code in seen_prop_short_codes:
-                    self.add('error', 'duplicate_property_short_code', f'Duplicate Merkmal-Code: {prop_short_code}', sheet=sheet_name, row=idx)
+                    self.add('error', 'duplicate_property_short_code', f'Duplicate Property-Code: {prop_short_code}', sheet=sheet_name, row=idx)
                 else:
                     seen_prop_short_codes.add(prop_short_code)
             if not merkmal:
@@ -964,7 +1007,7 @@ class Validator:
             unit_name_en = self._cell(row, headers.get('Unit Name (EN)', headers.get('Einheit-Name (EN)', 23))) if self.is_abgeglichen_template() else None
             if value_list_id and self.is_v20260619_template() and value_ids:
                 if value_list_id not in value_ids:
-                    self.add('error', 'unknown_value_list_id', f'Werteliste-ID {value_list_id} is not registered in Werte.', sheet=sheet_name, row=idx)
+                    self.add('error', 'unknown_value_list_id', f'Enumeration-ID {value_list_id} is not registered in Values.', sheet=sheet_name, row=idx)
             if ifc_property_uri:
                 if not self.is_absolute_uri(ifc_property_uri):
                     self.add('error', 'invalid_ifc_property_uri', f'IFC_URI is not a valid absolute IRI: {ifc_property_uri}', sheet=sheet_name, row=idx)
@@ -975,7 +1018,7 @@ class Validator:
             for uri_label, uri_value in [('IfcPropertySet / IfcQuantitySet', ifc_pset or ifc_qto)]:
                 if uri_value:
                     if not ifc_property_uri:
-                        self.add('warning', 'ifc_set_without_ifc_uri', f'{uri_label} is filled but Merkmale.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.', sheet=sheet_name, row=idx)
+                        self.add('warning', 'ifc_set_without_ifc_uri', f'{uri_label} is filled but {sheet_name}.IFC_URI is empty. The set reference is only validated when IFC_URI is also provided.', sheet=sheet_name, row=idx)
                     elif not self.is_absolute_uri(uri_value):
                         self.add('error', 'invalid_ifc_linked_uri', f'{uri_label} is not a valid absolute IRI: {uri_value}', sheet=sheet_name, row=idx)
                     elif not self.is_valid_bsdd_identifier_uri(uri_value):
@@ -1004,9 +1047,9 @@ class Validator:
                     self.add('error', 'duplicate_enumeration_values', f'Werteliste contains duplicate values for {prop_code}', sheet=sheet_name, row=idx)
             if self.is_abgeglichen_template():
                 if status and status not in ALLOWED_LIFECYCLE:
-                    self.add('error', 'invalid_property_status', f'Merkmale.Status must be one of the allowed lifecycle values, got: {status}', sheet=sheet_name, row=idx)
+                    self.add('error', 'invalid_property_status', f'{sheet_name}.Status must be one of the allowed lifecycle values, got: {status}', sheet=sheet_name, row=idx)
                 if version_date and not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})$', version_date):
-                    self.add('error', 'invalid_property_version_date', f'Merkmale.Versionsdatum should be ISO 8601 date-time with timezone, e.g. 2026-06-18T15:30+02:00, got: {version_date}', sheet=sheet_name, row=idx)
+                    self.add('error', 'invalid_property_version_date', f'{sheet_name}.Version date should be ISO 8601 date-time with timezone, e.g. 2026-06-18T15:30+02:00, got: {version_date}', sheet=sheet_name, row=idx)
             if unit_qudt:
                 if not self.is_absolute_uri(unit_qudt):
                     self.add('error', 'invalid_qudt_unit_uri', f'QUDT URI is not a valid absolute IRI: {unit_qudt}', sheet=sheet_name, row=idx)
@@ -1040,7 +1083,7 @@ class Validator:
     def validate_documents(self):
         dd = self.get_dd()
         docs = getattr(dd, 'documents', [])
-        sheet_name = 'Documents' if self.is_abgeglichen_template() and 'Documents' in self.wb.sheetnames else 'Dokumente'
+        sheet_name = self._sheet_name_for('documents')
         doc_start_row = 13
         if sheet_name == 'Dokumente':
             ws = self.wb[sheet_name]
@@ -1073,7 +1116,6 @@ class Validator:
                 continue
             expected_doc_id = self.slugify(doc_name) if doc_name else None
             if not doc_id and expected_doc_id:
-                self.add('warning', 'missing_document_id', f'Document-ID is system-generated and should not be authored manually. Generated value: {expected_doc_id}', sheet=sheet_name, row=i)
                 self.add_normalization(sheet_name, i, 'Document-ID', doc_id, expected_doc_id, 'System-generated ID derived from DocumentName', 'derived-document-id', True)
             elif doc_id and expected_doc_id and doc_id != expected_doc_id:
                 self.add('warning', 'system_generated_document_id_override', f'Document-ID is a system-generated field. Manual value {doc_id} will be overwritten by generated value {expected_doc_id}.', sheet=sheet_name, row=i)
@@ -1103,16 +1145,16 @@ class Validator:
                     self.add('error', 'inconsistent_group_label', f'Sicherheitsstufe {group_code} maps to multiple Zugänglichkeit labels: {prev} / {group_label}', sheet=sheet_name, row=i)
                 seen_group_map[group_code] = group_label
             if status and status_allowed and status not in status_allowed:
-                self.add('error', 'invalid_document_status', f'Dokumente.Status must come from Dropdownregeln.Status. Got: {status}', sheet=sheet_name, row=i)
+                self.add('error', 'invalid_document_status', f'{sheet_name}.Status must come from Rules.Status. Got: {status}', sheet=sheet_name, row=i)
             if version_date and not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})$', str(version_date).strip()):
-                self.add('error', 'invalid_document_version_date', f'Dokumente.Versionsdatum should be ISO 8601 date-time with timezone, e.g. 2026-06-18T15:30+02:00, got: {version_date}', sheet=sheet_name, row=i)
+                self.add('error', 'invalid_document_version_date', f'{sheet_name}.Version date should be ISO 8601 date-time with timezone, e.g. 2026-06-18T15:30+02:00, got: {version_date}', sheet=sheet_name, row=i)
             doc_uri = doc.get('Dokument URI')
             if doc_uri and not self.is_absolute_uri(doc_uri):
                 self.add('error', 'invalid_document_uri', f'Dokument URI is invalid: {doc_uri}', sheet=sheet_name, row=i)
 
     def validate_matrix(self):
-        matrix_sheet = 'Data_Template' if self.is_abgeglichen_template() and 'Data_Template' in self.wb.sheetnames else ('Data Template AreaMgmt' if self.is_v20260619_template() and 'Data Template AreaMgmt' in self.wb.sheetnames else 'KlassenMerkmal')
-        if matrix_sheet not in self.wb.sheetnames:
+        matrix_sheet = self._sheet_name_for('matrix')
+        if not matrix_sheet or matrix_sheet not in self.wb.sheetnames:
             return
         ws = self.wb[matrix_sheet]
         dd = self.get_dd()
@@ -1137,7 +1179,7 @@ class Validator:
                 if prop_code:
                     property_cols.append((col_idx, prop_code))
                     if prop_code not in property_codes_registered:
-                        self.add('error', 'matrix_unknown_merkmal_id', f'Data Template AreaMgmt references unknown Merkmal-ID in row 3: {prop_code}', sheet=matrix_sheet, row=3)
+                        self.add('error', 'matrix_unknown_merkmal_id', f'{matrix_sheet} references unknown Property-ID in row 3: {prop_code}', sheet=matrix_sheet, row=3)
             if not property_cols:
                 self.add('error', 'matrix_missing_property_columns', 'Data Template AreaMgmt has no property IDs in row 3 from column 5 onward', sheet=matrix_sheet, row=3)
             for ridx in range(8, ws.max_row + 1):
@@ -1241,51 +1283,52 @@ class Validator:
                     allowed_cmp = {a.strip().casefold() for a in allowed}
                     overrides_cmp = {str(o).strip().casefold() for o in overrides}
                     if allowed and not overrides_cmp.issubset(allowed_cmp):
-                        self.add('error', 'invalid_allowed_values_override', f'Data_Template override {overrides} is not a subset of the registered Werte list for property {label} / {prop_code}.', sheet=matrix_sheet, row=ridx)
+                        self.add('error', 'invalid_allowed_values_override', f'Data_Template override {overrides} is not a subset of the registered Values list for property {label} / {prop_code}.', sheet=matrix_sheet, row=ridx)
             return
         row4 = [self._norm(v) for v in next(ws.iter_rows(min_row=4, max_row=4, values_only=True))]
         row5 = [self._norm(v) for v in next(ws.iter_rows(min_row=5, max_row=5, values_only=True))]
         object_ids = []
         known_class_refs = 0
+        legacy_matrix_sheet = matrix_sheet
         for idx, obj_id in enumerate(row5, start=1):
-            if idx >= 8 and obj_id and obj_id != 'Objekt-ID':
+            if idx >= 8 and obj_id and obj_id != 'Class-ID' and obj_id != 'Objekt-ID':
                 object_ids.append((idx, obj_id))
                 if obj_id in class_codes:
                     known_class_refs += 1
         if not object_ids:
-            self.add('error', 'matrix_missing_object_columns', 'KlassenMerkmal has no object IDs in row 5 from column 8 onward', sheet='KlassenMerkmal', row=5)
+            self.add('error', 'matrix_missing_object_columns', f'{legacy_matrix_sheet} has no class IDs in row 5 from column 8 onward', sheet=legacy_matrix_sheet, row=5)
         for ridx, row in self._iter_data_rows(ws, 9):
             vals = list(row)
-            matrix_merkmal_id = self._cell(vals, 2)
+            matrix_property_id = self._cell(vals, 2)
             pset = self._cell(vals, 3)
-            merkmal = self._cell(vals, 4)
+            property_label_de = self._cell(vals, 4)
             prop_en = self._cell(vals, 5)
-            if not (matrix_merkmal_id or pset or merkmal or prop_en):
+            if not (matrix_property_id or pset or property_label_de or prop_en):
                 continue
-            if not matrix_merkmal_id:
-                self.add('error', 'matrix_missing_merkmal_id', 'KlassenMerkmal row is missing Merkmal-ID; it must reference a registered property identifier from Merkmale.', sheet='KlassenMerkmal', row=ridx)
+            if not matrix_property_id:
+                self.add('error', 'matrix_missing_merkmal_id', f'{legacy_matrix_sheet} row is missing Property-ID; it must reference a registered property identifier from Properties.', sheet=legacy_matrix_sheet, row=ridx)
                 continue
-            if matrix_merkmal_id not in property_codes_registered:
-                self.add('error', 'matrix_unknown_merkmal_id', f'KlassenMerkmal row references unknown Merkmal-ID: {matrix_merkmal_id}', sheet='KlassenMerkmal', row=ridx)
+            if matrix_property_id not in property_codes_registered:
+                self.add('error', 'matrix_unknown_merkmal_id', f'{legacy_matrix_sheet} row references unknown Property-ID: {matrix_property_id}', sheet=legacy_matrix_sheet, row=ridx)
                 continue
             if pset and pset not in registered_property_sets:
-                self.add('error', 'unknown_property_set_reference', f'KlassenMerkmal PropertySet is not registered in Merkmale as IfcPropertySet, IfcQuantitySet, or Merkmalsgruppe: {pset}', sheet='KlassenMerkmal', row=ridx)
-            prop_code = matrix_merkmal_id
+                self.add('error', 'unknown_property_set_reference', f'{legacy_matrix_sheet} PropertySet is not registered in Properties as IfcPropertySet, IfcQuantitySet, or GroupOfProperties: {pset}', sheet=legacy_matrix_sheet, row=ridx)
+            prop_code = matrix_property_id
             if prop_en and property_name_en.get(prop_en) and property_name_en.get(prop_en) != prop_code:
-                self.add('warning', 'matrix_property_name_mismatch', f'Property (EN) does not match the registered Merkmal-ID {prop_code}', sheet='KlassenMerkmal', row=ridx)
-            if merkmal and property_name_de.get(merkmal) and property_name_de.get(merkmal) != prop_code:
-                self.add('warning', 'matrix_property_label_mismatch', f'Merkmal (DE) does not match the registered Merkmal-ID {prop_code}', sheet='KlassenMerkmal', row=ridx)
+                self.add('warning', 'matrix_property_name_mismatch', f'Property (EN) does not match the registered Property-ID {prop_code}', sheet=legacy_matrix_sheet, row=ridx)
+            if property_label_de and property_name_de.get(property_label_de) and property_name_de.get(property_label_de) != prop_code:
+                self.add('warning', 'matrix_property_label_mismatch', f'Bezeichnung (DE) does not match the registered Property-ID {prop_code}', sheet=legacy_matrix_sheet, row=ridx)
             for col_idx, class_code in object_ids:
                 cell = self._cell(vals, col_idx)
                 if not cell:
                     continue
                 if cell.lower() != 'x':
                     allowed = self.allowed_values_for_property(prop_code)
-                    overrides = self.parse_allowed_list(cell, sheet='KlassenMerkmal', row=ridx, column=f'object-col-{col_idx}')
+                    overrides = self.parse_allowed_list(cell, sheet=legacy_matrix_sheet, row=ridx, column=f'object-col-{col_idx}')
                     allowed_cmp = {a.strip().casefold() for a in allowed}
                     overrides_cmp = {o.strip().casefold() for o in overrides}
                     if allowed and not overrides_cmp.issubset(allowed_cmp):
-                        self.add('error', 'invalid_allowed_values_override', f'This class-specific restriction contains values {overrides} that are not listed in the property\'s official allowed values for {prop_code}. Please correct the override or add the missing value to the property\'s allowed values.', sheet='KlassenMerkmal', row=ridx)
+                        self.add('error', 'invalid_allowed_values_override', f'This class-specific restriction contains values {overrides} that are not listed in the property\'s official allowed values for {prop_code}. Please correct the override or add the missing value to the property\'s allowed values.', sheet=legacy_matrix_sheet, row=ridx)
 
     def validate_concept_relations(self):
         dd = self.get_dd()
@@ -1385,16 +1428,16 @@ def _layman_mapping(code: str) -> dict:
             'category': 'Object definitions',
         },
         'unknown_value_list_id': {
-            'title': 'Value catalog ID is not registered',
-            'what_it_means': 'Ein Merkmal verweist auf eine value catalog ID, die im Tab Werte nicht existiert.',
-            'what_to_do': 'Prüfen Sie die Schreibweise der Werteliste-ID oder registrieren Sie den fehlenden value catalog in Werte.',
-            'category': 'Value catalog issues',
+            'title': 'Enumeration ID is not registered',
+            'what_it_means': 'Ein Property verweist auf eine Enumeration-ID, die im Tab Values nicht existiert.',
+            'what_to_do': 'Prüfen Sie die Schreibweise der Enumeration-ID oder registrieren Sie den fehlenden Eintrag im Tab Values.',
+            'category': 'Enumeration issues',
         },
         'noncanonical_value_list_id': {
-            'title': 'Value catalog ID does not follow the standard format',
-            'what_it_means': 'Die Werteliste-ID ist vorhanden, aber nicht im kanonischen Format geschrieben, das vom Standard erwartet wird.',
-            'what_to_do': 'Benennen Sie die Werteliste-ID in die vom Validator gezeigte kanonische Form um.',
-            'category': 'Value catalog issues',
+            'title': 'Enumeration designation does not follow the standard format',
+            'what_it_means': 'Die EnumerationDesignation (EN) ist vorhanden, aber nicht im kanonischen Format geschrieben, das vom Standard erwartet wird.',
+            'what_to_do': 'Benennen Sie die EnumerationDesignation (EN) in die vom Validator gezeigte kanonische Form um.',
+            'category': 'Enumeration issues',
         },
         'missing_ifc_property_uri_reference': {
             'title': 'Official IFC property URI missing',
@@ -1404,32 +1447,32 @@ def _layman_mapping(code: str) -> dict:
         },
         'missing_ifc_property_set_reference': {
             'title': 'Official IFC property-set reference missing',
-            'what_it_means': 'Dieses Merkmal hat keine offizielle Referenz auf ein IfcPropertySet oder IfcQuantitySet.',
-            'what_to_do': 'Fügen Sie die offizielle IFC-Set-Referenz hinzu, falls sie anwendbar ist; andernfalls geben Sie eine Merkmalsgruppe an.',
+            'what_it_means': 'Dieses Property hat keine offizielle Referenz auf ein IfcPropertySet oder IfcQuantitySet.',
+            'what_to_do': 'Fügen Sie die offizielle IFC-Set-Referenz hinzu, falls sie anwendbar ist; andernfalls geben Sie eine GroupOfProperties an.',
             'category': 'Property definitions',
         },
         'missing_property_set_locator': {
             'title': 'No property grouping provided',
-            'what_it_means': 'Dieses Merkmal hat weder eine offizielle IFC property-set reference noch eine lokale Merkmalsgruppe.',
-            'what_to_do': 'Geben Sie eine IfcPropertySet / IfcQuantitySet reference an oder ergänzen Sie eine Merkmalsgruppe.',
+            'what_it_means': 'Dieses Property hat weder eine offizielle IFC property-set reference noch eine lokale GroupOfProperties-Zuordnung.',
+            'what_to_do': 'Geben Sie eine IfcPropertySet / IfcQuantitySet reference an oder ergänzen Sie eine GroupOfProperties-Zuordnung.',
             'category': 'Property definitions',
         },
         'unknown_property_set_reference': {
             'title': 'Property set reference is unknown',
-            'what_it_means': 'Das im Template verwendete PropertySet ist nicht im Merkmalskatalog registriert.',
-            'what_to_do': 'Verwenden Sie einen registrierten IfcPropertySet-, IfcQuantitySet- oder Merkmalsgruppe-Wert.',
+            'what_it_means': 'Das im Data_Template verwendete PropertySet ist nicht im Property-Katalog registriert.',
+            'what_to_do': 'Verwenden Sie einen registrierten IfcPropertySet-, IfcQuantitySet- oder GroupOfProperties-Wert.',
             'category': 'Data template assignment issues',
         },
         'matrix_unknown_merkmal_id': {
             'title': 'Property ID in template area is unknown',
-            'what_it_means': 'Das Data Template referenziert eine Merkmal-ID, die im Property-Tab nicht registriert ist.',
-            'what_to_do': 'Verwenden Sie eine Merkmal-ID, die in Merkmale existiert.',
+            'what_it_means': 'Das Data_Template referenziert eine Property-ID, die im Tab Properties nicht registriert ist.',
+            'what_to_do': 'Verwenden Sie eine Property-ID, die in Properties existiert.',
             'category': 'Data template assignment issues',
         },
         'invalid_allowed_values_override': {
             'title': 'Selected values do not match the allowed values',
-            'what_it_means': 'Die für eine Objekt-/Merkmals-Kombination ausgewählten Werte gehören nicht zu den offiziellen Allowed Values dieses Merkmals.',
-            'what_to_do': 'Korrigieren Sie die Werte oder erweitern Sie den offiziellen Werte, falls die fehlenden Werte tatsächlich benötigt werden.',
+            'what_it_means': 'Die für eine Klassen-/Property-Kombination ausgewählten Werte gehören nicht zu den offiziellen Allowed Values dieses Properties.',
+            'what_to_do': 'Korrigieren Sie die Werte oder erweitern Sie die offiziellen Values, falls die fehlenden Werte tatsächlich benötigt werden.',
             'category': 'Data template assignment issues',
         },
         'missing_source_code': {
@@ -1441,7 +1484,7 @@ def _layman_mapping(code: str) -> dict:
         'unknown_source_code': {
             'title': 'Source code is not registered',
             'what_it_means': 'Es wurde eine source verwendet, die im document/source register nicht formell registriert ist.',
-            'what_to_do': 'Registrieren Sie die source in Dokumente oder verwenden Sie Organisation.',
+            'what_to_do': 'Registrieren Sie die source in Documents oder verwenden Sie Organisation.',
             'category': 'Document and source governance',
         },
         'missing_document_code': {

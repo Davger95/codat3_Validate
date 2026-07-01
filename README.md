@@ -1,47 +1,62 @@
-# Data Dictionary Validierungs-MVP
+# Öffentliche Data-Dictionary-Validierung
 
-Dieses Repository stellt die **öffentliche Excel-Vorlage** und die **GitHub-basierte Validierung** für ausgefüllte Data Dictionaries bereit.
+Dieses Repository hilft Unternehmen dabei, ihren bestehenden Datenkatalog in eine strukturierte Excel-Vorlage zu überführen und die Qualität dieser Daten systematisch zu verbessern.
 
-## Kanonische Vorlage
+Kurz gesagt ist der Ablauf so:
+
+1. die leere Vorlage herunterladen
+2. den heutigen Datenkatalog des Unternehmens eintragen
+3. die Datei über GitHub Actions validieren
+4. Fehler und Warnungen schrittweise bereinigen
+5. so lange verbessern, bis die Datei sauber durchläuft
+
+Das Ziel ist nicht einfach nur eine "gültige Datei", sondern ein besser strukturierter, klarer und konsistenter Datenkatalog.
+
+Dabei hilft die Validierung, den Inhalt schrittweise an bewährte fachliche und semantische Standards anzunähern, insbesondere an:
+
+- ISO 23386 / ISO 23387
+- ISO 12006
+- DCAT
+
+## Was Sie in diesem Repository finden
+
+- eine **leere Startvorlage**
+- ein **ausgefülltes Beispiel**
+- eine **Validierungs-Pipeline**
+- eine **Schritt-für-Schritt-Anleitung**
+- ergänzende **deutschsprachige Dokumentation**
+
+## Womit Sie starten sollen
+
+Lesen Sie zuerst:
+
+- `GettingStarted.md`
+
+Verwenden Sie dann die leere Vorlage:
 
 - `templates/Strukturvorlage_DataDictionary_v2_empty.xlsx`
 
-Diese Datei ist die einzige kanonische öffentliche Vorlage.
+Wenn Sie ein Beispiel brauchen, schauen Sie hier:
 
-## Öffentlicher Nutzer-Workflow
+- `templates/test_files/Strukturvorlage_DataDictionary_v5_AreaMgmt.xlsx`
 
-1. Vorlage herunterladen
-2. Vorlage ausfüllen
-3. Ausgefüllte `.xlsx` in das Repository hochladen oder committen
-4. GitHub Action **Validate Data Dictionary** manuell starten und bei Bedarf `workbook_path` auf die eigene Datei setzen
-5. Validierungsbericht als Artefakt herunterladen und lesen
+## Wichtiger Nutzen
 
-## Öffentliche Blattnamen der Vorlage
+Wenn Sie die Validierung konsequent durchlaufen, erhalten Sie:
 
-Die Vorlage arbeitet im MVP mit diesen öffentlichen Blattnamen:
+- bessere Datenqualität
+- klarere Begriffe und Definitionen
+- konsistentere Struktur
+- sauberere Referenzen zwischen Klassen, Merkmalen, Werten und Dokumenten
+- eine bessere Grundlage für spätere digitale Weiterverwendung
 
-- `Header`
-- `Classes`
-- `Properties`
-- `Values`
-- `Documents`
-- `GroupOfProperties`
-- `Rules`
-- `Data_Template`
+## Öffentlicher Nutzungszweck
 
-## Wichtiger Hinweis zum MVP
+Dieses Repository ist für eine saubere öffentliche Nutzung gedacht.
 
-Der öffentliche MVP ist auf die **Validierung von ausgefüllten Arbeitsmappen** ausgelegt.
+Es enthält deshalb nur:
 
-- Die Validierung einer ausgefüllten Arbeitsmappe ist der eigentliche Nutzer-Workflow.
-- Die Validierung der leeren Vorlage ist nur der **Standard-Smoke-Test** der GitHub Action.
-
-## Ausserhalb des aktuellen öffentlichen MVP
-
-Nicht Teil dieses öffentlichen MVP sind derzeit:
-
-- RDF-Erzeugung
-- bSDD-Publikation
-- i14y-Publikation
-- LINDAS-Publikation
-- sonstige Export-/Publishing-Pipelines
+- die öffentliche Vorlage
+- das öffentliche Beispiel
+- die nutzbare Validierungslogik
+- unterstützende Dokumentation
